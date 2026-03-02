@@ -145,6 +145,10 @@ function findProvider(id, email) {
 const DAYS_OF_WEEK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const ORANGE = '#c2510a';
 
+/* ─── Design tokens ────────────────────────────────────────────
+   Single card style used throughout — keeps all cards visually
+   identical so the only differentiator is content.
+──────────────────────────────────────────────────────────────── */
 const S = {
   hero: {
     background: 'rgba(255, 255, 255, 0.06)',
@@ -157,60 +161,145 @@ const S = {
     position: 'relative',
     zIndex: 1,
   },
-  gray: {
-    background: '#d6d0c8',
-    border: '1px solid #c8c2ba',
+  card: {
+    background: '#ede9e3',
+    border: '1px solid #dedad4',
     borderRadius: '12px',
     overflow: 'hidden',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+  },
+  // Kept for backward-compat — same values as card
+  gray: {
+    background: '#ede9e3',
+    border: '1px solid #dedad4',
+    borderRadius: '12px',
+    overflow: 'hidden',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
   },
   white: {
     background: '#ede9e3',
     border: '1px solid #dedad4',
     borderRadius: '12px',
     overflow: 'hidden',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
   },
 };
 
-// Inject responsive CSS once
+/* ─── CSS injection ─────────────────────────────────────────────
+   All spacing uses one rhythm unit: 24px.
+   Sections are separated by 24px.  Internal card padding: 24px.
+   No element has its own ad-hoc marginBottom — everything flows
+   from .profile-section-block + the grid gap values.
+──────────────────────────────────────────────────────────────── */
 const injectResponsiveStyles = () => {
   if (document.getElementById('profile-responsive-styles')) return;
   const style = document.createElement('style');
   style.id = 'profile-responsive-styles';
   style.textContent = `
-    /* ── Reset & base ── */
-    #profilePage * { box-sizing: border-box; }
 
-    /* ── Hero two-column grid ── */
+    /* ── Global box-sizing reset (scoped) ── */
+    #profilePage *,
+    #profilePage *::before,
+    #profilePage *::after {
+      box-sizing: border-box;
+    }
+
+    /* ════════════════════════════════════════
+       PAGE WRAPPER
+       Handles all outer padding.  Never add
+       padding to individual sections — use
+       this class only.
+    ════════════════════════════════════════ */
+    .page-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      /* top 24px | sides 32px | bottom 48px */
+      padding: 24px 32px 48px;
+    }
+
+    /* ════════════════════════════════════════
+       SECTION RHYTHM
+       Every top-level block gets exactly 24px
+       below it.  The last block (#contactSection)
+       needs no bottom margin — the page-inner
+       bottom padding handles the footer gap.
+    ════════════════════════════════════════ */
+    .profile-section-block {
+      margin-bottom: 24px;
+    }
+    .profile-section-block > *:last-child {
+      margin-bottom: 0;
+    }
+
+    /* ════════════════════════════════════════
+       HERO GRID
+    ════════════════════════════════════════ */
     .profile-hero-grid {
       display: grid;
-      grid-template-columns: 68% 32%;
+      grid-template-columns: 68% 1fr;
       gap: 24px;
-      margin-bottom: 24px;
       align-items: stretch;
+      /* margin handled exclusively by .profile-section-block */
     }
 
     /* ── Left card ── */
     .profile-left-card {
       background: #ede9e3;
+      border: 1px solid #dedad4;
       border-radius: 12px;
       padding: 32px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.06);
-      border: 1px solid #dedad4;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.05);
     }
 
-    /* ── Section spacing within left card ── */
+    /* Sections inside the left card */
     .profile-section {
       margin-top: 32px;
       padding-top: 28px;
       border-top: 1px solid rgba(0,0,0,0.08);
     }
-    .profile-section:first-child {
+    .profile-section.no-border {
       margin-top: 0;
       padding-top: 0;
       border-top: none;
     }
 
-    /* ── Eyebrow & heading rhythm ── */
+    /* ── Right card (image/profile panel) ── */
+    .profile-right-card {
+      position: relative;
+      border-radius: 14px;
+      overflow: hidden;
+      background-color: #2a2a2a;
+      background-size: cover;
+      background-position: center 20%;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.30);
+      min-height: 0;
+      height: 100%;      /* fills grid row via align-items:stretch */
+    }
+    .profile-right-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      background: linear-gradient(
+        160deg,
+        rgba(10,10,10,0.88) 0%,
+        rgba(35,35,35,0.70) 55%,
+        rgba(10,10,10,0.82) 100%
+      );
+    }
+    .profile-right-content {
+      position: relative;
+      z-index: 1;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: flex-start;
+      height: 100%;
+    }
+
+    /* ════════════════════════════════════════
+       TYPOGRAPHY HELPERS
+    ════════════════════════════════════════ */
     .sec-eyebrow {
       display: block;
       margin-bottom: 6px;
@@ -221,7 +310,9 @@ const injectResponsiveStyles = () => {
       line-height: 1.3;
     }
 
-    /* ── Tag cloud (services & age groups) ── */
+    /* ════════════════════════════════════════
+       TAG CLOUD & GRADE PILLS
+    ════════════════════════════════════════ */
     .tag-cloud,
     .grade-pills {
       display: flex;
@@ -250,8 +341,6 @@ const injectResponsiveStyles = () => {
       background: ${ORANGE};
       color: #fff;
     }
-
-    /* ── "No services" message ── */
     .no-services-msg {
       color: #888;
       font-style: italic;
@@ -259,8 +348,6 @@ const injectResponsiveStyles = () => {
       margin: 0;
       padding: 4px 0;
     }
-
-    /* ── Age groups divider ── */
     .age-groups-section {
       margin-top: 24px;
       padding-top: 20px;
@@ -270,42 +357,14 @@ const injectResponsiveStyles = () => {
       margin-bottom: 10px;
     }
 
-    /* ── Right card (hero image panel) ── */
-    .profile-right-card {
-      position: relative;
-      border-radius: 14px;
-      overflow: hidden;
-      background-color: #2a2a2a;
-      background-size: cover;
-      background-position: center 20%;
-      box-shadow: 0 12px 40px rgba(0,0,0,0.35);
-      /* Fills exact height of left card via stretch */
-      min-height: 0;
-      height: 100%;
-    }
-    .profile-right-overlay {
-      position: absolute;
-      inset: 0;
-      z-index: 0;
-      background: linear-gradient(160deg, rgba(10,10,10,0.88) 0%, rgba(35,35,35,0.72) 55%, rgba(10,10,10,0.82) 100%);
-    }
-    .profile-right-content {
-      position: relative;
-      z-index: 1;
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      /* Content starts at the top, never stretches awkwardly */
-      justify-content: flex-start;
-      height: 100%;
-    }
-
-    /* ── Rating bar ── */
+    /* ════════════════════════════════════════
+       RATING BAR (inside right card)
+    ════════════════════════════════════════ */
     .rating-bar {
       display: flex;
       align-items: center;
       gap: 14px;
+      width: 100%;
       background: rgba(255,255,255,0.10);
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
@@ -320,31 +379,29 @@ const injectResponsiveStyles = () => {
       line-height: 1;
       flex-shrink: 0;
     }
-    .rating-stars {
-      font-size: 1rem;
-      line-height: 1.4;
-      letter-spacing: 1px;
-    }
-    .rating-sub {
-      font-size: 0.75rem;
-      line-height: 1.4;
-      margin-top: 2px;
-    }
+    .rating-stars { font-size: 1rem; line-height: 1.4; letter-spacing: 1px; }
+    .rating-sub   { font-size: 0.75rem; line-height: 1.4; margin-top: 2px; }
 
-    /* ── Credentials + Availability two-col ── */
+    /* ════════════════════════════════════════
+       CREDENTIALS + AVAILABILITY ROW
+    ════════════════════════════════════════ */
     .profile-two-col {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 20px;
+      gap: 24px;
       align-items: start;
     }
 
-    /* ── Standalone section spacing ── */
-    .profile-section-block {
-      margin-bottom: 24px;
+    /* ════════════════════════════════════════
+       CARD PADDING — uniform across every card
+    ════════════════════════════════════════ */
+    .card-pad {
+      padding: 24px;
     }
 
-    /* ── Day pills ── */
+    /* ════════════════════════════════════════
+       DAY PILLS
+    ════════════════════════════════════════ */
     .avail-grid {
       display: flex;
       flex-wrap: wrap;
@@ -364,12 +421,9 @@ const injectResponsiveStyles = () => {
       white-space: nowrap;
     }
 
-    /* ── Card pad consistent ── */
-    .card-pad {
-      padding: 24px;
-    }
-
-    /* ── qual-list spacing ── */
+    /* ════════════════════════════════════════
+       QUALIFICATIONS LIST
+    ════════════════════════════════════════ */
     .qual-list {
       list-style: none;
       padding: 0;
@@ -386,37 +440,108 @@ const injectResponsiveStyles = () => {
       color: #3a3a3a;
       line-height: 1.5;
     }
-    .qual-list li i {
-      margin-top: 2px;
-      flex-shrink: 0;
-    }
+    .qual-list li i { margin-top: 2px; flex-shrink: 0; }
 
-    /* ── Contact section two-col ── */
+    /* ════════════════════════════════════════
+       CONTACT SECTION
+    ════════════════════════════════════════ */
+
+    /* Outer two-col: form left | right stack
+       align-items: stretch makes both columns
+       exactly the same height.               */
     .contact-two-col {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 20px;
-      align-items: start;
+      gap: 24px;
+      align-items: stretch;
     }
-    .contact-right-stack {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-    /* The contact form card should not stretch to match right stack */
-    .contact-two-col > .card:first-child {
+
+    /* Form card — anchors to top, natural height */
+    .contact-form-card {
       align-self: start;
     }
 
-    /* ── Page inner padding (since inline padding was removed) ── */
-    .page-inner {
-      padding-left: 32px !important;
-      padding-right: 32px !important;
-      padding-top: 24px;
-      padding-bottom: 40px;
+    /* Right stack fills the full column height
+       so Contact Details + Location together
+       match the form height on the left.     */
+    .contact-right-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      width: 100%;
+      height: 100%;           /* fills grid row height */
     }
 
-    /* ── Form fields ── */
+    /* Location card grows to fill whatever
+       space remains after Contact Details.   */
+    .location-card {
+      flex: 1;                /* takes up remaining height */
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    /* card-pad inside location must also flex */
+    .location-card > .card-pad {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .location-card .location-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    /* Push delivery line to bottom of card */
+    .location-card .location-delivery {
+      margin-top: auto;
+      padding-top: 16px;
+      border-top: 1px solid rgba(0,0,0,0.08);
+    }
+
+    /* Location inner layout */
+    .location-body {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+    /* Place row: icon + name + badge */
+    .location-place {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(0,0,0,0.08);
+      margin-bottom: 16px;
+    }
+    .location-place-name {
+      font-weight: 600;
+      font-size: 0.92rem;
+      color: #2a2a2a;
+    }
+    .location-badge {
+      font-size: 0.72rem;
+      color: #777;
+      background: rgba(0,0,0,0.05);
+      padding: 3px 10px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+    /* Delivery row — pushed to bottom by margin-top:auto */
+    .location-delivery {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      color: #555;
+      margin-top: auto;
+      padding-top: 16px;
+      border-top: 1px solid rgba(0,0,0,0.08);
+    }
+
+    /* ════════════════════════════════════════
+       FORM FIELDS
+    ════════════════════════════════════════ */
     .form-group .field {
       margin-bottom: 14px;
     }
@@ -426,6 +551,8 @@ const injectResponsiveStyles = () => {
       font-weight: 600;
       color: #444;
       margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
     }
     .form-group .field input,
     .form-group .field select,
@@ -439,13 +566,18 @@ const injectResponsiveStyles = () => {
       gap: 12px;
     }
 
-    /* ── Responsive: tablet & mobile ── */
+    /* ════════════════════════════════════════
+       RESPONSIVE BREAKPOINTS
+    ════════════════════════════════════════ */
+
+    /* Large tablet */
     @media (max-width: 1024px) {
       .profile-hero-grid {
-        grid-template-columns: 65% 35%;
+        grid-template-columns: 63% 1fr;
       }
     }
 
+    /* Tablet portrait — single column */
     @media (max-width: 900px) {
       .profile-hero-grid {
         grid-template-columns: 1fr;
@@ -453,20 +585,36 @@ const injectResponsiveStyles = () => {
       }
       .profile-right-card {
         height: auto;
-        min-height: 340px;
+        min-height: 320px;
       }
       .profile-two-col {
         grid-template-columns: 1fr;
       }
+      /* Stack contact columns — reset height stretching */
       .contact-two-col {
         grid-template-columns: 1fr;
+        align-items: start;
+      }
+      .contact-right-stack {
+        height: auto;
+      }
+      .location-card {
+        flex: none;
+      }
+      .location-card > .card-pad,
+      .location-card .location-body {
+        flex: none;
+      }
+      .location-delivery {
+        margin-top: 16px;
+        padding-top: 16px;
       }
     }
 
+    /* Mobile landscape / small tablet */
     @media (max-width: 768px) {
       .page-inner {
-        padding-left: 16px !important;
-        padding-right: 16px !important;
+        padding: 16px 16px 40px;
       }
       .profile-left-card {
         padding: 20px;
@@ -474,35 +622,30 @@ const injectResponsiveStyles = () => {
       .card-pad {
         padding: 18px;
       }
+      /* All section gaps drop to 16px on mobile */
+      .profile-hero-grid,
+      .profile-two-col,
+      .contact-two-col,
+      .contact-right-stack {
+        gap: 16px;
+      }
+      .profile-section-block {
+        margin-bottom: 16px;
+      }
       .tag-cloud,
-      .grade-pills {
-        gap: 8px;
-      }
+      .grade-pills { gap: 8px; }
       .tag-cloud .tag,
-      .grade-pills > div {
-        font-size: 0.82rem;
-        padding: 6px 14px;
-      }
-      .avail-grid {
-        gap: 6px;
-      }
-      .avail-pill {
-        min-width: 42px;
-        padding: 6px 8px;
-        font-size: 0.75rem;
-      }
-      .form-group .form-row {
-        grid-template-columns: 1fr;
-      }
-      .rating-big {
-        font-size: 1.8rem;
-      }
+      .grade-pills > div { font-size: 0.82rem; padding: 6px 14px; }
+      .avail-grid   { gap: 6px; }
+      .avail-pill   { min-width: 42px; padding: 6px 8px; font-size: 0.75rem; }
+      .form-group .form-row { grid-template-columns: 1fr; }
+      .rating-big   { font-size: 1.8rem; }
     }
 
+    /* Small mobile */
     @media (max-width: 480px) {
       .page-inner {
-        padding-left: 12px !important;
-        padding-right: 12px !important;
+        padding: 12px 12px 32px;
       }
       .profile-left-card {
         padding: 16px;
@@ -515,7 +658,10 @@ const injectResponsiveStyles = () => {
         padding-top: 20px;
       }
       .profile-right-card {
-        min-height: 280px;
+        min-height: 260px;
+      }
+      .card-heading {
+        font-size: 1.15rem;
       }
     }
   `;
@@ -548,7 +694,7 @@ const Profile = () => {
       try {
         const cu = JSON.parse(localStorage.getItem('sah_current_user') || 'null');
         if (cu?.id) found = findProvider(cu.id, null);
-      } catch {}
+      } catch { }
     }
     if (!found) found = SEED_PROVIDERS.find(p => p.id === 'khan');
     setProfile(found);
@@ -669,16 +815,21 @@ const Profile = () => {
       )}
 
       <main className="page-wrap" id="profilePage" data-tier={tier} style={{ display: 'block' }}>
-        <div className="page-inner" style={{ maxWidth: '1280px', margin: '0 auto' }}>
+        {/*
+          .page-inner owns ALL outer spacing.
+          No inline padding here — CSS class handles it.
+        */}
+        <div className="page-inner">
 
-          {/* ── HERO: two-column grid ── */}
-          <div className="profile-hero-grid">
+          {/* ════════════════════════════════════
+              HERO — two-column
+          ════════════════════════════════════ */}
+          <div className="profile-hero-grid profile-section-block">
 
-            {/* Left column: About + Services */}
+            {/* Left: About + Services */}
             <div className="profile-left-card">
 
-              {/* About Us */}
-              <div className="profile-section" style={{ marginTop: 0, paddingTop: 0, borderTop: 'none' }}>
+              <div className="profile-section no-border">
                 <Eyebrow>About the Provider</Eyebrow>
                 <Heading>About Us</Heading>
                 <div className="content-body" style={{ color: '#3a3a3a', lineHeight: '1.7', margin: 0 }}>
@@ -686,7 +837,6 @@ const Profile = () => {
                 </div>
               </div>
 
-              {/* What We Offer */}
               <div className="profile-section">
                 <Eyebrow>Services</Eyebrow>
                 <Heading>What We Offer</Heading>
@@ -802,13 +952,11 @@ const Profile = () => {
                     })}
                   </div>
                 ) : (
-                  /* Only show "no services" when there are also no tags */
                   !profile.tags?.length && (
                     <p className="no-services-msg">No services listed yet.</p>
                   )
                 )}
 
-                {/* Age Groups */}
                 {profile.ageGroups?.length > 0 && (
                   <div className="age-groups-section">
                     <Eyebrow>Age Groups / Grades</Eyebrow>
@@ -822,16 +970,14 @@ const Profile = () => {
               </div>
             </div>
 
-            {/* Right column: Profile summary card */}
+            {/* Right: Profile summary */}
             <div
               className="profile-right-card"
-              style={{
-                backgroundImage: profile.image ? `url(${profile.image})` : 'none',
-              }}
+              style={{ backgroundImage: profile.image ? `url(${profile.image})` : 'none' }}
             >
               <div className="profile-right-overlay" />
               <div className="profile-right-content">
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', width: '100%', marginBottom: '16px' }}>
                   <button className="btn btn-outline" style={{ borderColor: 'rgba(255,255,255,0.50)', color: '#fff' }} onClick={shareProfile}>
                     <i className="fas fa-share-alt"></i> Share
                   </button>
@@ -871,10 +1017,13 @@ const Profile = () => {
               </div>
             </div>
           </div>
+          {/* end .profile-hero-grid */}
 
-          {/* ── Credentials & Availability ── */}
-          <div className="profile-two-col">
-            <div className="card" style={S.white}>
+          {/* ════════════════════════════════════
+              CREDENTIALS + AVAILABILITY
+          ════════════════════════════════════ */}
+          <div className="profile-two-col profile-section-block">
+            <div className="card" style={S.card}>
               <div className="card-pad">
                 <Eyebrow>Credentials</Eyebrow>
                 <Heading>Qualifications</Heading>
@@ -889,7 +1038,7 @@ const Profile = () => {
                 </ul>
               </div>
             </div>
-            <div className="card" style={S.white}>
+            <div className="card" style={S.card}>
               <div className="card-pad">
                 <Eyebrow>Schedule</Eyebrow>
                 <Heading as="h3" style={{ fontSize: '1rem' }}>Availability</Heading>
@@ -913,14 +1062,16 @@ const Profile = () => {
             </div>
           </div>
 
-          {/* ── Reviews ── */}
+          {/* ════════════════════════════════════
+              REVIEWS
+          ════════════════════════════════════ */}
           {(tier === 'pro' || tier === 'featured') && profile.reviews?.items?.length > 0 && (
-            <div className="card paid-only profile-section-block" style={S.gray}>
+            <div className="card paid-only profile-section-block" style={S.card}>
               <div className="card-pad">
                 <Eyebrow>Testimonials</Eyebrow>
                 <Heading>Parent Reviews</Heading>
                 {profile.reviews.items.map((review, idx) => (
-                  <div key={idx} className="review-card" style={{ background: '#ede9e3' }}>
+                  <div key={idx} className="review-card" style={{ background: '#f5f1eb' }}>
                     <div className="review-header">
                       <span className="reviewer-name" style={{ color: '#1a1a1a' }}>{review.reviewer}</span>
                       <span className="review-stars" style={{ color: ORANGE }}>{'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}</span>
@@ -932,10 +1083,14 @@ const Profile = () => {
             </div>
           )}
 
-          {/* ── CONTACT SECTION ── */}
-          <div id="contactSection" style={{ marginTop: '40px' }}>
+          {/* ════════════════════════════════════
+              CONTACT SECTION
+          ════════════════════════════════════ */}
+          <div id="contactSection">
+
+            {/* Upgrade prompt — free tier */}
             {tier === 'free' && (
-            <div className="card profile-section-block" id="upgradeCard" style={S.gray}>
+              <div className="card profile-section-block" id="upgradeCard" style={S.card}>
                 <div className="card-pad" style={{ textAlign: 'center' }}>
                   <i className="fas fa-lock" style={{ fontSize: '1.4rem', color: ORANGE, marginBottom: '10px' }}></i>
                   <p style={{ fontSize: '0.85rem', color: '#555', marginBottom: '14px' }}>
@@ -950,7 +1105,9 @@ const Profile = () => {
 
             {(tier === 'pro' || tier === 'featured') ? (
               <div className="contact-two-col">
-                <div className="card" style={S.white}>
+
+                {/* ── Left: Enquiry form ── */}
+                <div className="card contact-form-card" style={S.card}>
                   <div className="card-pad">
                     <Eyebrow>Get in Touch</Eyebrow>
                     <Heading as="h3" style={{ fontSize: '1rem' }}>Send an Enquiry</Heading>
@@ -992,8 +1149,12 @@ const Profile = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* ── Right: Contact details + Location ── */}
                 <div className="contact-right-stack">
-                  <div className="card paid-only" style={S.gray}>
+
+                  {/* Contact Details */}
+                  <div className="card paid-only" style={S.card}>
                     <div className="card-pad">
                       <Eyebrow>Direct Contact</Eyebrow>
                       <Heading as="h3" style={{ fontSize: '1rem' }}>Contact Details</Heading>
@@ -1042,31 +1203,53 @@ const Profile = () => {
                       )}
                     </div>
                   </div>
-                  <div className="card" style={S.gray}>
+
+                  {/* ── Location card ──
+                      Same .card-pad as every other card (24px).
+                      Content uses .location-body → .location-place
+                      (icon + name + badge) separated from the
+                      delivery line by a subtle border.             */}
+                  <div className="card location-card" style={S.card}>
                     <div className="card-pad">
                       <Eyebrow>Location</Eyebrow>
                       <Heading as="h3" style={{ fontSize: '1rem' }}>Where We Operate</Heading>
-                      <div className="map-ph">
-                        <i className="fas fa-map-marker-alt" style={{ color: ORANGE }}></i>
-                        <span>{profile.city ? `${profile.city}, ${profile.province}` : profile.location || 'South Africa'}</span>
-                        <span style={{ fontSize: '0.75rem' }}>
-                          {profile.serviceAreaType === 'national' ? 'National'
-                            : profile.serviceAreaType === 'local' ? `Local (${profile.radius} km radius)`
-                            : 'Online only'}
-                        </span>
+
+                      <div className="location-body">
+
+                        {/* Row 1: pin icon + place name + service-area badge */}
+                        <div className="location-place">
+                          <i className="fas fa-map-marker-alt" style={{ color: ORANGE, flexShrink: 0 }}></i>
+                          <span className="location-place-name">
+                            {profile.city
+                              ? `${profile.city}, ${profile.province}`
+                              : profile.location || 'South Africa'}
+                          </span>
+                          <span className="location-badge">
+                            {profile.serviceAreaType === 'national'
+                              ? 'National'
+                              : profile.serviceAreaType === 'local'
+                                ? `Local (${profile.radius} km radius)`
+                                : 'Online only'}
+                          </span>
+                        </div>
+
+                        {/* Row 2: delivery mode note */}
+                        <p className="location-delivery">
+                          <i className="fas fa-laptop" style={{ color: ORANGE, flexShrink: 0 }}></i>
+                          {(profile.deliveryMode || profile.delivery || '').includes('Online')
+                            ? 'Online sessions available nationwide'
+                            : 'In-person sessions available'}
+                        </p>
+
                       </div>
-                      <p style={{ fontSize: '0.82rem', color: '#777', marginTop: '10px' }}>
-                        <i className="fas fa-laptop" style={{ color: ORANGE, marginRight: '5px' }}></i>
-                        {(profile.deliveryMode || profile.delivery || '').includes('Online')
-                          ? 'Online sessions available nationwide'
-                          : 'In-person sessions available'}
-                      </p>
                     </div>
                   </div>
-                </div>
+
+                </div>{/* end .contact-right-stack */}
               </div>
             ) : (
-              <div className="card" style={S.white}>
+              /* Free tier — enquiry form only, full-width */
+              <div className="card" style={S.card}>
                 <div className="card-pad">
                   <Eyebrow>Get in Touch</Eyebrow>
                   <Heading as="h3" style={{ fontSize: '1rem' }}>Send an Enquiry</Heading>
@@ -1109,8 +1292,9 @@ const Profile = () => {
                 </div>
               </div>
             )}
-          </div>
-        </div>
+
+          </div>{/* end #contactSection */}
+        </div>{/* end .page-inner */}
       </main>
       <Footer />
     </>
