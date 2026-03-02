@@ -338,9 +338,6 @@ const Profile = () => {
     setLoading(false);
   }, [searchParams]);
 
-  const scrollToContact = () =>
-    document.getElementById('contactSection')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
   const shareProfile = () => {
     if (navigator.share) {
       navigator.share({ title: profile?.name, url: window.location.href });
@@ -502,174 +499,290 @@ const Profile = () => {
         <Header />
       )}
 
-      <main className="page-wrap" id="profilePage" data-tier={tier}>
-        <div className="main-content">
+      <main className="page-wrap" id="profilePage" data-tier={tier} style={{ display: 'block' }}>
+        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 32px' }}>
 
-          {/* ── HERO ── */}
+          {/* ── HERO (two‑column, background only on right) ── */}
           <div style={{
-            position: 'relative',
-            borderRadius: '14px',
+            display: 'grid',
+            gridTemplateColumns: '70% 30%',
+            gap: '24px',
             marginBottom: '20px',
-            overflow: 'hidden',
-            backgroundImage: profile.image ? `url(${profile.image})` : 'none',
-            backgroundColor: '#2a2a2a',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center 20%',
-            boxShadow: '0 12px 40px rgba(0,0,0,0.35)',
           }}>
+            {/* Left column (70%): About + Services (now with card styling) */}
             <div style={{
-              position: 'absolute', inset: 0, zIndex: 0,
-              background: 'linear-gradient(120deg, rgba(15,15,15,0.82) 0%, rgba(40,40,40,0.68) 60%, rgba(15,15,15,0.76) 100%)',
-            }} />
-            <div style={{ position: 'relative', zIndex: 1 }}>
-              <div className="profile-head-card" style={S.hero}>
-                <div className="profile-head-body">
-                  <div className="profile-head-inner">
-                    <div className="avatar-lg" id="profileAvatar">
-                      {profile.image
-                        ? <img src={profile.image} alt={profile.name} />
-                        : profile.photo
-                          ? <img src={profile.photo} alt={profile.name} />
-                          : <i className="fas fa-user avatar-placeholder"></i>}
-                    </div>
-                    <div className="profile-info">
-                      <div className="badge-row" id="badgeRow">
-                        {tier === 'featured' && <span className="badge badge-featured"><i className="fas fa-star"></i> Featured Partner</span>}
-                        {(tier === 'pro' || tier === 'featured') && <span className="badge badge-verified"><i className="fas fa-check"></i> Verified</span>}
-                      </div>
-                      <h1 className="profile-name" style={{ color: '#fff' }}>{profile.name}</h1>
-                      <p className="profile-tagline" style={{ color: 'rgba(255,255,255,0.78)' }}>{profile.tagline || profile.primaryCategory || ''}</p>
-                      {profile.startingPrice && profile.startingPrice !== 'Contact' && (
-                        <div className="price-badge" style={{ background: ORANGE, color: '#fff', border: 'none' }}>
-                          <i className="fas fa-tag"></i> From {profile.startingPrice || profile.priceFrom}
-                        </div>
-                      )}
-                      <div className="meta-strip">
-                        <div className="meta-item" style={{ color: 'rgba(255,255,255,0.82)' }}><i className="fas fa-tag" style={{ color: ORANGE }}></i><strong>{profile.primaryCategory || profile.category || 'Provider'}</strong></div>
-                        <div className="meta-item" style={{ color: 'rgba(255,255,255,0.82)' }}><i className="fas fa-map-marker-alt" style={{ color: ORANGE }}></i><span>{profile.city ? `${profile.city}, ${profile.province}` : profile.location || 'South Africa'}</span></div>
-                        <div className="meta-item" style={{ color: 'rgba(255,255,255,0.82)' }}><i className="fas fa-laptop-house" style={{ color: ORANGE }}></i><span>{profile.deliveryMode || profile.delivery || 'Online'}</span></div>
-                      </div>
-                      <div className="action-row">
-                        <button className="btn btn-primary" onClick={scrollToContact}><i className="fas fa-envelope"></i> Contact Provider</button>
-                        {(tier === 'pro' || tier === 'featured') && (
-                          <button className="btn btn-whatsapp" onClick={() => window.open(`https://wa.me/${(profile.phone || '').replace(/\D/g, '')}`, '_blank')}>
-                            <i className="fab fa-whatsapp"></i> WhatsApp
-                          </button>
-                        )}
-                        <button className="btn btn-outline" style={{ borderColor: 'rgba(255,255,255,0.50)', color: '#fff' }} onClick={() => alert('Saved to favourites!')}><i className="far fa-heart"></i> Save</button>
-                        <button className="btn btn-outline" style={{ borderColor: 'rgba(255,255,255,0.50)', color: '#fff' }} onClick={shareProfile}><i className="fas fa-share-alt"></i> Share</button>
-                      </div>
-                      {(tier === 'pro' || tier === 'featured') && profile.reviews?.average > 0 && (
-                        <div className="rating-bar" style={{ background: 'rgba(255,255,255,0.10)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px' }}>
-                          <div className="rating-big" style={{ color: ORANGE }}>{profile.reviews.average}</div>
-                          <div>
-                            <div className="rating-stars" style={{ color: ORANGE }}>{ratingStars(profile.reviews.average)}</div>
-                            <div className="rating-sub" style={{ color: 'rgba(255,255,255,0.68)' }}>Based on {profile.reviews.count} verified reviews</div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* ── About ── */}
-          <div className="card" style={S.white}>
-            <div className="card-pad">
+              background: '#ede9e3',
+              borderRadius: '12px',
+              padding: '24px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+            }}>
+              {/* About Us */}
               <Eyebrow>About the Provider</Eyebrow>
               <Heading>About Us</Heading>
-              <div className="content-body">
+              <div className="content-body" style={{ color: '#3a3a3a', lineHeight: '1.7' }}>
                 <p>{profile.bio || 'This provider has not yet added a description.'}</p>
+              </div>
+
+              {/* What We Offer */}
+              <div style={{ marginTop: '28px' }}>
+                <Eyebrow>Services</Eyebrow>
+                <Heading>What We Offer</Heading>
+
+                {profile.tags?.length > 0 && (
+                  <div className="tag-cloud" style={{ marginBottom: '16px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {profile.tags.map((tag, idx) => (
+                      <span
+                        key={idx}
+                        className="tag"
+                        style={{
+                          background: '#ffffff',
+                          color: ORANGE,
+                          border: `1px solid ${ORANGE}`,
+                          fontWeight: 600,
+                          padding: '6px 14px',
+                          borderRadius: '30px',
+                          fontSize: '0.85rem',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.03)',
+                        }}
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {profile.services?.length > 0 ? (
+                  profile.services.map((service, idx) => {
+                    if (typeof service === 'string') {
+                      return (
+                        <span
+                          key={idx}
+                          style={{
+                            background: '#ffffff',
+                            color: ORANGE,
+                            border: `1px solid ${ORANGE}`,
+                            fontWeight: 600,
+                            display: 'inline-block',
+                            marginRight: 8,
+                            marginBottom: 8,
+                            padding: '6px 14px',
+                            borderRadius: '30px',
+                            fontSize: '0.85rem',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.03)',
+                          }}
+                        >
+                          {service}
+                        </span>
+                      );
+                    }
+                    const svcAgeGroups = service.ageGroups || [];
+                    const svcSubjects = service.subjects || '';
+                    return (
+                      <div
+                        key={idx}
+                        style={{
+                          background: '#ffffff',
+                          borderRadius: '12px',
+                          padding: '18px 20px',
+                          marginBottom: '12px',
+                          border: '1px solid rgba(194, 81, 10, 0.15)',
+                          boxShadow: '0 4px 10px rgba(0,0,0,0.02)',
+                          transition: 'box-shadow 0.2s ease',
+                          cursor: 'default',
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.06)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.boxShadow = '0 4px 10px rgba(0,0,0,0.02)')}
+                      >
+                        {service.title && (
+                          <div style={{ fontWeight: 700, color: '#1a1a1a', fontSize: '1.05rem', marginBottom: 6 }}>
+                            {service.title}
+                          </div>
+                        )}
+                        {service.description && (
+                          <div style={{ color: '#555', fontSize: '0.9rem', marginBottom: 12, lineHeight: '1.6' }}>
+                            {service.description}
+                          </div>
+                        )}
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                          {svcSubjects && svcSubjects.split(',').map((s, i) => s.trim() && (
+                            <span
+                              key={i}
+                              style={{
+                                background: '#f5f0ea',
+                                color: ORANGE,
+                                border: `1px solid ${ORANGE}`,
+                                fontWeight: 500,
+                                fontSize: '0.8rem',
+                                padding: '4px 12px',
+                                borderRadius: '20px',
+                              }}
+                            >
+                              {s.trim()}
+                            </span>
+                          ))}
+                        </div>
+                        {svcAgeGroups.length > 0 && (
+                          <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.8rem', color: '#777', fontWeight: 500 }}>Ages:</span>
+                            {svcAgeGroups.map((age, i) => (
+                              <span
+                                key={i}
+                                style={{
+                                  background: ORANGE,
+                                  color: '#fff',
+                                  fontSize: '0.8rem',
+                                  padding: '4px 12px',
+                                  borderRadius: '20px',
+                                  fontWeight: 600,
+                                }}
+                              >
+                                {age}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        {service.deliveryMode && (
+                          <div style={{ marginTop: 10, fontSize: '0.8rem', color: '#666' }}>
+                            <i className="fas fa-laptop-house" style={{ marginRight: 6, color: ORANGE }} />
+                            {service.deliveryMode}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p style={{ color: '#888', fontStyle: 'italic', fontSize: '0.9rem' }}>No services listed yet.</p>
+                )}
+
+                {profile.ageGroups?.length > 0 && (
+                  <>
+                    <div style={{ margin: '20px 0 12px', height: '1px', background: 'rgba(0,0,0,0.08)' }} />
+                    <Eyebrow><span style={{ display: 'block' }}>Age Groups / Grades</span></Eyebrow>
+                    <div className="grade-pills" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      {profile.ageGroups.map((age, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            background: '#ffffff',
+                            color: ORANGE,
+                            border: `1px solid ${ORANGE}`,
+                            fontWeight: 600,
+                            padding: '6px 16px',
+                            borderRadius: '30px',
+                            fontSize: '0.85rem',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.03)',
+                          }}
+                        >
+                          {age}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Right column (30%): Profile summary with background image & overlay (unchanged) */}
+            <div style={{
+              position: 'relative',
+              borderRadius: '14px',
+              overflow: 'hidden',
+              backgroundImage: profile.image ? `url(${profile.image})` : 'none',
+              backgroundColor: '#2a2a2a',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center 20%',
+              boxShadow: '0 12px 40px rgba(0,0,0,0.35)',
+            }}>
+              <div style={{
+                position: 'absolute', inset: 0, zIndex: 0,
+                background: 'linear-gradient(120deg, rgba(15,15,15,0.82) 0%, rgba(40,40,40,0.68) 60%, rgba(15,15,15,0.76) 100%)',
+              }} />
+              <div style={{ position: 'relative', zIndex: 1, padding: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+                  <button className="btn btn-outline" style={{ borderColor: 'rgba(255,255,255,0.50)', color: '#fff' }} onClick={shareProfile}>
+                    <i className="fas fa-share-alt"></i> Share
+                  </button>
+                </div>
+                <div className="avatar-lg" id="profileAvatar" style={{ marginBottom: '16px' }}>
+                  {profile.image
+                    ? <img src={profile.image} alt={profile.name} />
+                    : profile.photo
+                      ? <img src={profile.photo} alt={profile.name} />
+                      : <i className="fas fa-user avatar-placeholder"></i>}
+                </div>
+                <div className="badge-row" id="badgeRow" style={{ marginBottom: '8px' }}>
+                  {tier === 'featured' && <span className="badge badge-featured"><i className="fas fa-star"></i> Featured Partner</span>}
+                  {(tier === 'pro' || tier === 'featured') && <span className="badge badge-verified"><i className="fas fa-check"></i> Verified</span>}
+                </div>
+                <h1 className="profile-name" style={{ color: '#fff', marginBottom: '4px' }}>{profile.name}</h1>
+                <p className="profile-tagline" style={{ color: 'rgba(255,255,255,0.78)', marginBottom: '8px' }}>{profile.tagline || profile.primaryCategory || ''}</p>
+                {profile.startingPrice && profile.startingPrice !== 'Contact' && (
+                  <div className="price-badge" style={{ background: ORANGE, color: '#fff', border: 'none', marginBottom: '12px' }}>
+                    <i className="fas fa-tag"></i> From {profile.startingPrice || profile.priceFrom}
+                  </div>
+                )}
+                <div className="meta-strip" style={{ marginBottom: '12px' }}>
+                  <div className="meta-item" style={{ color: 'rgba(255,255,255,0.82)' }}><i className="fas fa-tag" style={{ color: ORANGE }}></i><strong>{profile.primaryCategory || profile.category || 'Provider'}</strong></div>
+                  <div className="meta-item" style={{ color: 'rgba(255,255,255,0.82)' }}><i className="fas fa-map-marker-alt" style={{ color: ORANGE }}></i><span>{profile.city ? `${profile.city}, ${profile.province}` : profile.location || 'South Africa'}</span></div>
+                  <div className="meta-item" style={{ color: 'rgba(255,255,255,0.82)' }}><i className="fas fa-laptop-house" style={{ color: ORANGE }}></i><span>{profile.deliveryMode || profile.delivery || 'Online'}</span></div>
+                </div>
+                {(tier === 'pro' || tier === 'featured') && profile.reviews?.average > 0 && (
+                  <div className="rating-bar" style={{ background: 'rgba(255,255,255,0.10)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', marginTop: '16px' }}>
+                    <div className="rating-big" style={{ color: ORANGE }}>{profile.reviews.average}</div>
+                    <div>
+                      <div className="rating-stars" style={{ color: ORANGE }}>{ratingStars(profile.reviews.average)}</div>
+                      <div className="rating-sub" style={{ color: 'rgba(255,255,255,0.68)' }}>Based on {profile.reviews.count} verified reviews</div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
-          {/* ── Services ── */}
-          <div className="card" style={S.gray}>
-            <div className="card-pad">
-              <Eyebrow>Services</Eyebrow>
-              <Heading>What We Offer</Heading>
-
-              {profile.tags?.length > 0 && (
-                <div className="tag-cloud" style={{ marginBottom: '12px' }}>
-                  {profile.tags.map((tag, idx) => (
-                    <span key={idx} className="tag" style={{ background: '#ede9e3', color: ORANGE, border: `1px solid ${ORANGE}`, fontWeight: 600 }}>{tag}</span>
-                  ))}
-                </div>
-              )}
-
-              {profile.services?.length > 0 ? (
-                profile.services.map((service, idx) => {
-                  if (typeof service === 'string') {
-                    return <div key={idx} className="tag" style={{ background: '#ede9e3', color: ORANGE, border: `1px solid ${ORANGE}`, fontWeight: 600, display: 'inline-block', marginRight: 8, marginBottom: 8, padding: '4px 12px', borderRadius: 6 }}>{service}</div>;
-                  }
-                  const svcAgeGroups = service.ageGroups || [];
-                  const svcSubjects = service.subjects || '';
-                  return (
-                    <div key={idx} style={{ background: '#ede9e3', borderRadius: 10, padding: '14px 16px', marginBottom: 12, border: `1px solid ${ORANGE}22` }}>
-                      {service.title && <div style={{ fontWeight: 700, color: '#1a1a1a', fontSize: '0.98rem', marginBottom: 4 }}>{service.title}</div>}
-                      {service.description && <div style={{ color: '#555', fontSize: '0.87rem', marginBottom: 8 }}>{service.description}</div>}
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                        {svcSubjects && svcSubjects.split(',').map((s, i) => s.trim() && (
-                          <span key={i} style={{ background: '#d6d0c8', color: ORANGE, border: `1px solid ${ORANGE}`, fontWeight: 600, fontSize: '0.78rem', padding: '2px 10px', borderRadius: 20 }}>{s.trim()}</span>
-                        ))}
+          {/* ── Certifications & Availability (unchanged) ── */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+            <div className="card" style={S.white}>
+              <div className="card-pad">
+                <Eyebrow>Credentials</Eyebrow>
+                <Heading>Qualifications</Heading>
+                <ul className="qual-list">
+                  {profile.degrees && <li><i className="fas fa-graduation-cap" style={{ color: ORANGE }}></i> {profile.degrees}</li>}
+                  {profile.certifications && <li><i className="fas fa-certificate" style={{ color: ORANGE }}></i> {profile.certifications}</li>}
+                  {profile.memberships && <li><i className="fas fa-check-circle" style={{ color: ORANGE }}></i> {profile.memberships}</li>}
+                  {profile.clearance && <li><i className="fas fa-shield-alt" style={{ color: ORANGE }}></i> {profile.clearance}</li>}
+                  {!profile.degrees && !profile.certifications && !profile.memberships && !profile.clearance && (
+                    <li style={{ color: 'var(--muted)', fontStyle: 'italic' }}>No qualifications listed yet.</li>
+                  )}
+                </ul>
+              </div>
+            </div>
+            <div className="card" style={S.white}>
+              <div className="card-pad">
+                <Eyebrow>Schedule</Eyebrow>
+                <Heading as="h3" style={{ fontSize: '1rem' }}>Availability</Heading>
+                <div className="avail-grid" id="availGrid">
+                  {DAYS_OF_WEEK.map(day => {
+                    const active = (profile.availabilityDays || []).includes(day);
+                    return (
+                      <div key={day} className={`avail-pill ${active ? 'on' : ''}`} style={active
+                        ? { background: ORANGE, color: '#fff', fontWeight: 700, border: 'none' }
+                        : { background: '#d6d0c8', color: '#aaa', border: '1px solid #c0bab2' }
+                      }>
+                        {day}
                       </div>
-                      {svcAgeGroups.length > 0 && (
-                        <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                          <span style={{ fontSize: '0.75rem', color: '#888', alignSelf: 'center' }}>Ages:</span>
-                          {svcAgeGroups.map((age, i) => (
-                            <span key={i} style={{ background: ORANGE, color: '#fff', fontSize: '0.75rem', padding: '2px 10px', borderRadius: 20, fontWeight: 600 }}>{age}</span>
-                          ))}
-                        </div>
-                      )}
-                      {service.deliveryMode && (
-                        <div style={{ marginTop: 6, fontSize: '0.76rem', color: '#777' }}>
-                          <i className="fas fa-laptop-house" style={{ marginRight: 4, color: ORANGE }} />{service.deliveryMode}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })
-              ) : (
-                <p style={{ color: '#888', fontStyle: 'italic', fontSize: '0.88rem' }}>No services listed yet.</p>
-              )}
-
-              {profile.ageGroups?.length > 0 && (
-                <>
-                  <div className="section-divider"></div>
-                  <Eyebrow><span style={{ marginTop: '16px', display: 'block' }}>Age Groups / Grades</span></Eyebrow>
-                  <div className="grade-pills">
-                    {profile.ageGroups.map((age, idx) => (
-                      <div key={idx} className="grade-pill" style={{ background: '#ede9e3', color: ORANGE, border: `1px solid ${ORANGE}`, fontWeight: 600 }}>{age}</div>
-                    ))}
-                  </div>
-                </>
-              )}
+                    );
+                  })}
+                </div>
+                <p style={{ fontSize: '0.82rem', color: '#777', marginTop: '8px' }}>
+                  {profile.availabilityNotes || 'Contact for availability'}
+                </p>
+              </div>
             </div>
           </div>
 
-          {/* ── Qualifications ── */}
-          <div className="card" style={S.white}>
-            <div className="card-pad">
-              <Eyebrow>Credentials</Eyebrow>
-              <Heading>Qualifications</Heading>
-              <ul className="qual-list">
-                {profile.degrees && <li><i className="fas fa-graduation-cap" style={{ color: ORANGE }}></i> {profile.degrees}</li>}
-                {profile.certifications && <li><i className="fas fa-certificate" style={{ color: ORANGE }}></i> {profile.certifications}</li>}
-                {profile.memberships && <li><i className="fas fa-check-circle" style={{ color: ORANGE }}></i> {profile.memberships}</li>}
-                {profile.clearance && <li><i className="fas fa-shield-alt" style={{ color: ORANGE }}></i> {profile.clearance}</li>}
-                {!profile.degrees && !profile.certifications && !profile.memberships && !profile.clearance && (
-                  <li style={{ color: 'var(--muted)', fontStyle: 'italic' }}>No qualifications listed yet.</li>
-                )}
-              </ul>
-            </div>
-          </div>
-
-          {/* ── Reviews (paid only) ── */}
+          {/* ── Reviews (unchanged) ── */}
           {(tier === 'pro' || tier === 'featured') && profile.reviews?.items?.length > 0 && (
-            <div className="card paid-only" style={S.gray}>
+            <div className="card paid-only" style={{ ...S.gray, marginBottom: '20px' }}>
               <div className="card-pad">
                 <Eyebrow>Testimonials</Eyebrow>
                 <Heading>Parent Reviews</Heading>
@@ -685,169 +798,186 @@ const Profile = () => {
               </div>
             </div>
           )}
+
+          {/* ── CONTACT SECTION (unchanged) ── */}
+          <div id="contactSection" style={{ marginTop: '40px' }}>
+            {tier === 'free' && (
+              <div className="card" id="upgradeCard" style={{ ...S.gray, marginBottom: '20px' }}>
+                <div className="card-pad" style={{ textAlign: 'center' }}>
+                  <i className="fas fa-lock" style={{ fontSize: '1.4rem', color: ORANGE, marginBottom: '10px' }}></i>
+                  <p style={{ fontSize: '0.85rem', color: '#555', marginBottom: '14px' }}>
+                    Upgrade to <strong style={{ color: ORANGE }}>Trusted Provider</strong> to show your phone, WhatsApp and website to families.
+                  </p>
+                  <Link to="/" className="btn btn-primary" style={{ display: 'inline-flex', width: '100%', justifyContent: 'center' }}>
+                    <i className="fas fa-arrow-up"></i> Upgrade Plan
+                  </Link>
+                </div>
+              </div>
+            )}
+
+            {tier === 'pro' || tier === 'featured' ? (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                <div className="card" style={S.white}>
+                  <div className="card-pad">
+                    <Eyebrow>Get in Touch</Eyebrow>
+                    <Heading as="h3" style={{ fontSize: '1rem' }}>Send an Enquiry</Heading>
+                    <div className="form-group">
+                      <div className="form-row">
+                        <div className="field">
+                          <label>First name</label>
+                          <input type="text" placeholder="Sarah" />
+                        </div>
+                        <div className="field">
+                          <label>Last name</label>
+                          <input type="text" placeholder="Smith" />
+                        </div>
+                      </div>
+                      <div className="field">
+                        <label>Email</label>
+                        <input type="email" placeholder="sarah@email.com" />
+                      </div>
+                      <div className="field">
+                        <label>Phone</label>
+                        <input type="tel" placeholder="082 000 0000" />
+                      </div>
+                      <div className="field">
+                        <label>Subject</label>
+                        <select>
+                          <option>General enquiry</option>
+                          <option>Pricing &amp; availability</option>
+                          <option>Trial lesson</option>
+                          <option>Curriculum question</option>
+                        </select>
+                      </div>
+                      <div className="field">
+                        <label>Message</label>
+                        <textarea placeholder="Hi, I'd like to know more about..."></textarea>
+                      </div>
+                      <button className="btn btn-primary btn-block" onClick={() => alert('Enquiry sent! (Demo)')}>
+                        <i className="fas fa-paper-plane"></i> Send Enquiry
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <div className="card paid-only" style={S.gray}>
+                    <div className="card-pad">
+                      <Eyebrow>Direct Contact</Eyebrow>
+                      <Heading as="h3" style={{ fontSize: '1rem' }}>Contact Details</Heading>
+                      <div className="dc-item">
+                        <div className="dc-icon"><i className="fas fa-phone" style={{ color: ORANGE }}></i></div>
+                        <div className="dc-meta">
+                          <div className="dc-label">Phone</div>
+                          <div className="dc-value">{profile.phone || '—'}</div>
+                        </div>
+                      </div>
+                      <div className="dc-item dc-whatsapp">
+                        <div className="dc-icon wa"><i className="fab fa-whatsapp"></i></div>
+                        <div className="dc-meta">
+                          <div className="dc-label">WhatsApp</div>
+                          <div className="dc-value">{profile.whatsapp || profile.phone || '—'}</div>
+                        </div>
+                      </div>
+                      <div className="dc-item">
+                        <div className="dc-icon"><i className="fas fa-envelope" style={{ color: ORANGE }}></i></div>
+                        <div className="dc-meta">
+                          <div className="dc-label">Email</div>
+                          <div className="dc-value">{profile.contactEmail || profile.email || 'Contact for details'}</div>
+                        </div>
+                      </div>
+                      {(profile.website || profile.social) && (
+                        <div className="dc-item">
+                          <div className="dc-icon"><i className="fas fa-globe" style={{ color: ORANGE }}></i></div>
+                          <div className="dc-meta">
+                            <div className="dc-label">Website</div>
+                            <div className="dc-value">
+                              <a href={profile.website || profile.social} target="_blank" rel="noopener noreferrer" style={{ color: ORANGE }}>{profile.website || profile.social}</a>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      {profile.facebook && (
+                        <div className="dc-item">
+                          <div className="dc-icon"><i className="fab fa-facebook" style={{ color: '#1877f2' }}></i></div>
+                          <div className="dc-meta">
+                            <div className="dc-label">Facebook</div>
+                            <div className="dc-value">
+                              <a href={profile.facebook} target="_blank" rel="noopener noreferrer" style={{ color: ORANGE }}>{profile.facebook}</a>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="card" style={S.gray}>
+                    <div className="card-pad">
+                      <Eyebrow>Location</Eyebrow>
+                      <Heading as="h3" style={{ fontSize: '1rem' }}>Where We Operate</Heading>
+                      <div className="map-ph">
+                        <i className="fas fa-map-marker-alt" style={{ color: ORANGE }}></i>
+                        <span>{profile.city ? `${profile.city}, ${profile.province}` : profile.location || 'South Africa'}</span>
+                        <span style={{ fontSize: '0.75rem' }}>
+                          {profile.serviceAreaType === 'national' ? 'National'
+                            : profile.serviceAreaType === 'local' ? `Local (${profile.radius} km radius)`
+                            : 'Online only'}
+                        </span>
+                      </div>
+                      <p style={{ fontSize: '0.82rem', color: '#777', marginTop: '10px' }}>
+                        <i className="fas fa-laptop" style={{ color: ORANGE, marginRight: '5px' }}></i>
+                        {(profile.deliveryMode || profile.delivery || '').includes('Online')
+                          ? 'Online sessions available nationwide'
+                          : 'In-person sessions available'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="card" style={S.white}>
+                <div className="card-pad">
+                  <Eyebrow>Get in Touch</Eyebrow>
+                  <Heading as="h3" style={{ fontSize: '1rem' }}>Send an Enquiry</Heading>
+                  <div className="form-group">
+                    <div className="form-row">
+                      <div className="field">
+                        <label>First name</label>
+                        <input type="text" placeholder="Sarah" />
+                      </div>
+                      <div className="field">
+                        <label>Last name</label>
+                        <input type="text" placeholder="Smith" />
+                      </div>
+                    </div>
+                    <div className="field">
+                      <label>Email</label>
+                      <input type="email" placeholder="sarah@email.com" />
+                    </div>
+                    <div className="field">
+                      <label>Phone</label>
+                      <input type="tel" placeholder="082 000 0000" />
+                    </div>
+                    <div className="field">
+                      <label>Subject</label>
+                      <select>
+                        <option>General enquiry</option>
+                        <option>Pricing &amp; availability</option>
+                        <option>Trial lesson</option>
+                        <option>Curriculum question</option>
+                      </select>
+                    </div>
+                    <div className="field">
+                      <label>Message</label>
+                      <textarea placeholder="Hi, I'd like to know more about..."></textarea>
+                    </div>
+                    <button className="btn btn-primary btn-block" onClick={() => alert('Enquiry sent! (Demo)')}>
+                      <i className="fas fa-paper-plane"></i> Send Enquiry
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-
-        {/* ─────────── SIDEBAR ─────────── */}
-        <aside className="sidebar" id="contactSection">
-
-          {tier === 'free' && (
-            <div className="card" id="upgradeCard" style={S.gray}>
-              <div className="card-pad" style={{ textAlign: 'center' }}>
-                <i className="fas fa-lock" style={{ fontSize: '1.4rem', color: ORANGE, marginBottom: '10px' }}></i>
-                <p style={{ fontSize: '0.85rem', color: '#555', marginBottom: '14px' }}>
-                  Upgrade to <strong style={{ color: ORANGE }}>Trusted Provider</strong> to show your phone, WhatsApp and website to families.
-                </p>
-                <Link to="/" className="btn btn-primary" style={{ display: 'inline-flex', width: '100%', justifyContent: 'center' }}>
-                  <i className="fas fa-arrow-up"></i> Upgrade Plan
-                </Link>
-              </div>
-            </div>
-          )}
-
-          {/* Enquiry Form */}
-          <div className="card" style={S.white}>
-            <div className="card-pad">
-              <Eyebrow>Get in Touch</Eyebrow>
-              <Heading as="h3" style={{ fontSize: '1rem' }}>Send an Enquiry</Heading>
-              <div className="form-group">
-                <div className="form-row">
-                  <div className="field">
-                    <label>First name</label>
-                    <input type="text" placeholder="Sarah" />
-                  </div>
-                  <div className="field">
-                    <label>Last name</label>
-                    <input type="text" placeholder="Smith" />
-                  </div>
-                </div>
-                <div className="field">
-                  <label>Email</label>
-                  <input type="email" placeholder="sarah@email.com" />
-                </div>
-                <div className="field">
-                  <label>Phone</label>
-                  <input type="tel" placeholder="082 000 0000" />
-                </div>
-                <div className="field">
-                  <label>Subject</label>
-                  <select>
-                    <option>General enquiry</option>
-                    <option>Pricing &amp; availability</option>
-                    <option>Trial lesson</option>
-                    <option>Curriculum question</option>
-                  </select>
-                </div>
-                <div className="field">
-                  <label>Message</label>
-                  <textarea placeholder="Hi, I'd like to know more about..."></textarea>
-                </div>
-                <button className="btn btn-primary btn-block" onClick={() => alert('Enquiry sent! (Demo)')}>
-                  <i className="fas fa-paper-plane"></i> Send Enquiry
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Direct Contact (paid only) */}
-          {(tier === 'pro' || tier === 'featured') && (
-            <div className="card paid-only" style={S.gray}>
-              <div className="card-pad">
-                <Eyebrow>Direct Contact</Eyebrow>
-                <Heading as="h3" style={{ fontSize: '1rem' }}>Contact Details</Heading>
-                <div className="dc-item">
-                  <div className="dc-icon"><i className="fas fa-phone" style={{ color: ORANGE }}></i></div>
-                  <div className="dc-meta">
-                    <div className="dc-label">Phone</div>
-                    <div className="dc-value">{profile.phone || '—'}</div>
-                  </div>
-                </div>
-                <div className="dc-item dc-whatsapp">
-                  <div className="dc-icon wa"><i className="fab fa-whatsapp"></i></div>
-                  <div className="dc-meta">
-                    <div className="dc-label">WhatsApp</div>
-                    <div className="dc-value">{profile.whatsapp || profile.phone || '—'}</div>
-                  </div>
-                </div>
-                <div className="dc-item">
-                  <div className="dc-icon"><i className="fas fa-envelope" style={{ color: ORANGE }}></i></div>
-                  <div className="dc-meta">
-                    <div className="dc-label">Email</div>
-                    <div className="dc-value">{profile.contactEmail || profile.email || 'Contact for details'}</div>
-                  </div>
-                </div>
-                {(profile.website || profile.social) && (
-                  <div className="dc-item">
-                    <div className="dc-icon"><i className="fas fa-globe" style={{ color: ORANGE }}></i></div>
-                    <div className="dc-meta">
-                      <div className="dc-label">Website</div>
-                      <div className="dc-value">
-                        <a href={profile.website || profile.social} target="_blank" rel="noopener noreferrer" style={{ color: ORANGE }}>{profile.website || profile.social}</a>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                {profile.facebook && (
-                  <div className="dc-item">
-                    <div className="dc-icon"><i className="fab fa-facebook" style={{ color: '#1877f2' }}></i></div>
-                    <div className="dc-meta">
-                      <div className="dc-label">Facebook</div>
-                      <div className="dc-value">
-                        <a href={profile.facebook} target="_blank" rel="noopener noreferrer" style={{ color: ORANGE }}>{profile.facebook}</a>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Availability */}
-          <div className="card" style={S.white}>
-            <div className="card-pad">
-              <Eyebrow>Schedule</Eyebrow>
-              <Heading as="h3" style={{ fontSize: '1rem' }}>Availability</Heading>
-              <div className="avail-grid" id="availGrid">
-                {DAYS_OF_WEEK.map(day => {
-                  const active = (profile.availabilityDays || []).includes(day);
-                  return (
-                    <div key={day} className={`avail-pill ${active ? 'on' : ''}`} style={active
-                      ? { background: ORANGE, color: '#fff', fontWeight: 700, border: 'none' }
-                      : { background: '#d6d0c8', color: '#aaa', border: '1px solid #c0bab2' }
-                    }>
-                      {day}
-                    </div>
-                  );
-                })}
-              </div>
-              <p style={{ fontSize: '0.82rem', color: '#777', marginTop: '8px' }}>
-                {profile.availabilityNotes || 'Contact for availability'}
-              </p>
-            </div>
-          </div>
-
-          {/* Location */}
-          <div className="card" style={S.gray}>
-            <div className="card-pad">
-              <Eyebrow>Location</Eyebrow>
-              <Heading as="h3" style={{ fontSize: '1rem' }}>Where We Operate</Heading>
-              <div className="map-ph">
-                <i className="fas fa-map-marker-alt" style={{ color: ORANGE }}></i>
-                <span>{profile.city ? `${profile.city}, ${profile.province}` : profile.location || 'South Africa'}</span>
-                <span style={{ fontSize: '0.75rem' }}>
-                  {profile.serviceAreaType === 'national' ? 'National'
-                    : profile.serviceAreaType === 'local' ? `Local (${profile.radius} km radius)`
-                    : 'Online only'}
-                </span>
-              </div>
-              <p style={{ fontSize: '0.82rem', color: '#777', marginTop: '10px' }}>
-                <i className="fas fa-laptop" style={{ color: ORANGE, marginRight: '5px' }}></i>
-                {(profile.deliveryMode || profile.delivery || '').includes('Online')
-                  ? 'Online sessions available nationwide'
-                  : 'In-person sessions available'}
-              </p>
-            </div>
-          </div>
-        </aside>
       </main>
       <Footer />
     </>

@@ -390,7 +390,13 @@ const CSS = `
   .sah-spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff; border-radius: 50%; animation: sah-spin 0.7s linear infinite; }
   @keyframes sah-spin { to { transform: rotate(360deg); } }
 
-  /* ── Responsive ── */
+  .sah-qual-parsed {
+    padding: 10px 14px; background: #ecfdf5; border-radius: 8px;
+    border: 1px solid #a7f3d0; font-size: 0.8rem; color: #065f46;
+    margin-top: 10px; display: flex; align-items: center; gap: 8px;
+    font-weight: 600;
+  }
+
   @media (max-width: 900px) {
     .sah-reg-panel { max-width: 100%; padding: 0 16px 80px; }
     .sah-step-card-body { padding: 24px 20px; }
@@ -408,20 +414,15 @@ const CSS = `
   }
 `;
 
-// ── Config ────────────────────────────────────────────────────────────────────
-const API_URL = 'http://localhost:5000/api';
-const MAX_TOTAL_UPLOAD_MB = 100;
-const MAX_TOTAL_UPLOAD_BYTES = MAX_TOTAL_UPLOAD_MB * 1024 * 1024;
-
+// ── Step 1 now has NO terms — step 1 desc updated accordingly ──
 const STEPS = [
-  { title: 'Select Plan',            label: 'Select Plan', desc: 'Choose a listing plan for your profile',                    icon: 'fa-layer-group'    },
-  { title: 'Account Setup',          label: 'Account',     desc: 'Create your provider account credentials',                  icon: 'fa-user-circle'    },
-  { title: 'Identity & Trust',       label: 'Identity',    desc: 'Build trust with your qualifications and bio',              icon: 'fa-id-card'        },
-  { title: 'Services Offered',       label: 'Services',    desc: 'Tell families what you offer',                              icon: 'fa-briefcase'      },
-  { title: 'Location & Reach',       label: 'Location',    desc: 'Where can you serve families?',                            icon: 'fa-map-marker-alt' },
-  { title: 'Pricing & Availability', label: 'Pricing',     desc: 'Set your rates and schedule',                              icon: 'fa-calendar-alt'   },
-  { title: 'Contact Details',        label: 'Contact',     desc: 'How families can reach you',                               icon: 'fa-phone'          },
-  { title: 'Terms & Conditions',     label: 'Terms',       desc: 'Review and agree to our terms before creating your profile', icon: 'fa-file-contract' },
+  { title: 'Select Plan',           label: 'Select Plan',      desc: 'Choose the listing plan that suits your business',      icon: 'fa-layer-group' },
+  { title: 'Account Setup',         label: 'Account Setup',    desc: 'Create your provider account credentials',              icon: 'fa-user-circle' },
+  { title: 'Identity & Trust',      label: 'Identity & Trust', desc: 'Build trust with your qualifications and bio',          icon: 'fa-id-card' },
+  { title: 'Services Offered',      label: 'Services Offered', desc: 'Tell families what you offer',                         icon: 'fa-briefcase' },
+  { title: 'Location & Reach',      label: 'Location & Reach', desc: 'Where can you serve families?',                       icon: 'fa-map-marker-alt' },
+  { title: 'Pricing & Availability',label: 'Pricing',          desc: 'Set your rates and schedule',                         icon: 'fa-calendar-alt' },
+  { title: 'Contact Details',       label: 'Contact Details',  desc: 'How families can reach you — agree to terms & submit', icon: 'fa-phone' },
 ];
 const TOTAL = STEPS.length;
 
@@ -474,11 +475,11 @@ const PRICING_UNIT_MAP = { 'Hourly': '/hr', 'Per package': '/package', 'Per term
 const TIME_SLOT_REGEX = /^(\d{1,2}:\d{2}\s*[-–]\s*\d{1,2}:\d{2})(\s*,\s*\d{1,2}:\d{2}\s*[-–]\s*\d{1,2}:\d{2})*$/;
 
 const EXTRA_SOCIALS = [
-  { key: 'instagram', label: 'Instagram',   icon: 'fab fa-instagram',   placeholder: 'https://instagram.com/yourprofile' },
-  { key: 'linkedin',  label: 'LinkedIn',    icon: 'fab fa-linkedin-in', placeholder: 'https://linkedin.com/in/yourname'  },
-  { key: 'tiktok',    label: 'TikTok',      icon: 'fab fa-tiktok',      placeholder: 'https://tiktok.com/@yourhandle'    },
-  { key: 'youtube',   label: 'YouTube',     icon: 'fab fa-youtube',     placeholder: 'https://youtube.com/@yourchannel' },
-  { key: 'twitter',   label: 'X / Twitter', icon: 'fab fa-x-twitter',   placeholder: 'https://x.com/yourhandle'         },
+  { key: 'instagram', label: 'Instagram',  icon: 'fab fa-instagram',  placeholder: 'https://instagram.com/yourprofile' },
+  { key: 'linkedin',  label: 'LinkedIn',   icon: 'fab fa-linkedin-in', placeholder: 'https://linkedin.com/in/yourname' },
+  { key: 'tiktok',    label: 'TikTok',     icon: 'fab fa-tiktok',      placeholder: 'https://tiktok.com/@yourhandle' },
+  { key: 'youtube',   label: 'YouTube',    icon: 'fab fa-youtube',     placeholder: 'https://youtube.com/@yourchannel' },
+  { key: 'twitter',   label: 'X / Twitter',icon: 'fab fa-x-twitter',   placeholder: 'https://x.com/yourhandle' },
 ];
 
 const ALL_CATEGORIES = [
@@ -553,29 +554,25 @@ const FieldErr = ({ msg }) => msg
 const Registration = () => {
   const navigate  = useNavigate();
   const location  = useLocation();
+  const { register } = useAuth();
   const { showNotification } = useNotification();
 
-  const [step, setStep]                   = useState(1);
-  const [data, setData]                   = useState({ listingPlan: 'Free Listing – basic profile', terms: false });
-  const [fieldErrors, setFieldErrors]     = useState({});
-  const [showPw, setShowPw]               = useState(false);
-  const [submitting, setSubmitting]       = useState(false);
+  const [step, setStep]               = useState(1);
+  // ── terms removed from initial state default; validated only on step 7 ──
+  const [data, setData]               = useState({ listingPlan: 'Free Listing – basic profile' });
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [showPw, setShowPw]           = useState(false);
+  const [submitting, setSubmitting]   = useState(false);
   const [showSecondary, setShowSecondary] = useState(false);
-  const [timeSlotErr, setTimeSlotErr]     = useState('');
+  const [qualMode, setQualMode]       = useState('text');
+  const [clearanceMode, setClearanceMode] = useState('text');
+  const [timeSlotErr, setTimeSlotErr] = useState('');
   const [showSocialDropdown, setShowSocialDropdown] = useState(false);
-  const [addedSocials, setAddedSocials]   = useState([]);
-  const [apiOnline, setApiOnline]         = useState(null);
-  const [termsOpen, setTermsOpen]         = useState(false);
+  const [addedSocials, setAddedSocials] = useState([]);
+  const [parsedQualFileName, setParsedQualFileName] = useState('');
+  const topRef       = useRef(null);
+  const socialDropRef = useRef(null);
 
-  const [certFiles, setCertFiles]             = useState([]);
-  const [clearanceFiles, setClearanceFiles]   = useState([]);
-
-  const topRef            = useRef(null);
-  const socialDropRef     = useRef(null);
-  const certInputRef      = useRef(null);
-  const clearanceInputRef = useRef(null);
-
-  // ── Inject CSS + fonts ──
   useEffect(() => {
     injectHead();
     if (!document.getElementById('sah-reg-css')) {
@@ -646,46 +643,51 @@ const Registration = () => {
   const addSocial    = (key) => { if (!addedSocials.includes(key)) setAddedSocials(prev => [...prev, key]); setShowSocialDropdown(false); };
   const removeSocial = (key) => { setAddedSocials(prev => prev.filter(k => k !== key)); set(key, ''); };
 
-  // ── File helpers (PDF only) ──
-  const totalFileBytes = (files) => files.reduce((acc, f) => acc + f.size, 0);
-
-  const handleCertFilesAdd = (e) => {
-    const incoming = Array.from(e.target.files || []);
-    const pdfOnly  = incoming.filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
-    if (pdfOnly.length < incoming.length)
-      setFieldErrors(prev => ({ ...prev, certFiles: 'Only PDF files are allowed for certificates.' }));
-    const combined = [...certFiles, ...pdfOnly];
-    if (totalFileBytes(combined) > MAX_TOTAL_UPLOAD_BYTES) {
-      setFieldErrors(prev => ({ ...prev, certFiles: `Total file size cannot exceed ${MAX_TOTAL_UPLOAD_MB}MB.` }));
-      return;
+  const handleQualFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const nameWithoutExt = file.name.replace(/\.[^.]+$/, '');
+    const segments = nameWithoutExt.replace(/[_\-\.]/g, ' ').replace(/\s+/g, ' ').trim();
+    const lc = segments.toLowerCase();
+    setParsedQualFileName(file.name);
+    const degreeKeywords = ['bed','bsc','ba ','honours','diploma','degree','masters','phd','med ','pgce','bachelor'];
+    const certKeywords   = ['sace','umalusi','cert','accredited','registered'];
+    const memberKeywords = ['member','association','society','institute'];
+    const hasDegree = degreeKeywords.some(k => lc.includes(k));
+    const hasCert   = certKeywords.some(k => lc.includes(k));
+    const hasMember = memberKeywords.some(k => lc.includes(k));
+    if (file.name.toLowerCase().endsWith('.txt')) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const text = ev.target.result;
+        const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+        const degLine    = lines.find(l => degreeKeywords.some(k => l.toLowerCase().includes(k)));
+        const certLine   = lines.find(l => certKeywords.some(k => l.toLowerCase().includes(k)));
+        const memberLine = lines.find(l => memberKeywords.some(k => l.toLowerCase().includes(k)));
+        setData(prev => ({
+          ...prev,
+          qualDegree:      degLine    || prev.qualDegree    || segments,
+          qualCerts:       certLine   || prev.qualCerts     || '',
+          qualMemberships: memberLine || prev.qualMemberships || '',
+        }));
+      };
+      reader.readAsText(file);
+    } else {
+      setData(prev => ({
+        ...prev,
+        qualDegree:      hasDegree ? segments : (prev.qualDegree || segments),
+        qualCerts:       hasCert   ? segments : (prev.qualCerts  || ''),
+        qualMemberships: hasMember ? segments : prev.qualMemberships,
+      }));
     }
-    setCertFiles(combined);
-    setFieldErrors(prev => ({ ...prev, certFiles: '' }));
-    if (certInputRef.current) certInputRef.current.value = '';
   };
 
-  const removeCertFile = (idx) => setCertFiles(prev => prev.filter((_, i) => i !== idx));
-
-  const handleClearanceFilesAdd = (e) => {
-    const incoming = Array.from(e.target.files || []);
-    const pdfOnly  = incoming.filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
-    if (pdfOnly.length < incoming.length)
-      setFieldErrors(prev => ({ ...prev, clearanceFiles: 'Only PDF files are allowed for police clearance.' }));
-    const combined = [...clearanceFiles, ...pdfOnly];
-    if (totalFileBytes([...certFiles, ...combined]) > MAX_TOTAL_UPLOAD_BYTES) {
-      setFieldErrors(prev => ({ ...prev, clearanceFiles: `Total combined file size cannot exceed ${MAX_TOTAL_UPLOAD_MB}MB.` }));
-      return;
-    }
-    setClearanceFiles(combined);
-    setFieldErrors(prev => ({ ...prev, clearanceFiles: '' }));
-    if (clearanceInputRef.current) clearanceInputRef.current.value = '';
-  };
-
-  const removeClearanceFile = (idx) => setClearanceFiles(prev => prev.filter((_, i) => i !== idx));
-
-  // ── Validation ──
   const validateStep = () => {
     const errs = {};
+    // ── Step 1: plan selection only — NO terms validation here ──
+    if (step === 1) {
+      // nothing required beyond selecting a plan (already pre-selected to free)
+    }
     if (step === 2) {
       if (!data.fullName?.trim()) errs.fullName = 'Please enter your full name or business name.';
       if (!data.email?.trim() || !/^\S+@\S+\.\S+$/.test(data.email)) errs.email = 'Enter a valid email address (e.g. name@example.com).';
@@ -711,17 +713,19 @@ const Registration = () => {
     }
     if (step === 6) {
       if (!data.pricingModel) errs.pricingModel = 'Please select how you charge for your services.';
-      if (!data.daysAvailable?.length) errs.daysAvailable = 'Please select at least one day.';
-      if (!data.timeSlots?.trim()) errs.timeSlots = 'Please enter your available time slots.';
-      else if (!TIME_SLOT_REGEX.test(data.timeSlots.trim())) errs.timeSlots = 'Use the format HH:MM - HH:MM.';
+      if (!data.daysAvailable?.length) errs.daysAvailable = 'Please select at least one day you are available.';
+      if (!data.timeSlots?.trim()) {
+        errs.timeSlots = 'Please enter your available time slots (e.g. 9:00 - 17:00).';
+      } else if (!TIME_SLOT_REGEX.test(data.timeSlots.trim())) {
+        errs.timeSlots = 'Use the format HH:MM - HH:MM (e.g. 9:00 - 17:00).';
+      }
     }
+    // ── Step 7: contact details + TERMS (moved here from step 1) ──
     if (step === 7) {
       if (!data.phoneLocal?.trim()) errs.phoneLocal = 'Please enter your phone number.';
       else if (data.phoneLocal.replace(/\D/g, '').length !== 9) errs.phoneLocal = 'Enter exactly 9 digits after +27.';
-      if (!data.inquiryEmail?.trim() || !/^\S+@\S+\.\S+$/.test(data.inquiryEmail)) errs.inquiryEmail = 'Please enter a valid email for enquiries.';
-    }
-    if (step === 8) {
-      if (!data.terms) errs.terms = 'Please tick the box to agree to the Terms and Community Guidelines before creating your profile.';
+      if (!data.inquiryEmail?.trim() || !/^\S+@\S+\.\S+$/.test(data.inquiryEmail)) errs.inquiryEmail = 'Please enter a valid email address for enquiries.';
+      if (!data.terms) errs.terms = 'Please agree to the Terms and Community Guidelines before submitting.';
     }
     return errs;
   };
@@ -746,180 +750,75 @@ const Registration = () => {
   // ── Submit ────────────────────────────────────────────────────────────────
   const submit = async () => {
     setSubmitting(true);
-    setFieldErrors({});
-
-    const tier            = planToTier(data.listingPlan);
-    const fullPhone       = data.phoneLocal    ? '+27' + data.phoneLocal.replace(/\D/g, '')    : '';
-    const fullWhatsapp    = data.whatsappLocal ? '+27' + data.whatsappLocal.replace(/\D/g, '') : fullPhone;
-    const priceUnit       = PRICING_UNIT_MAP[data.pricingModel] || '';
-    const priceDisplay    = data.startingPrice ? `R${data.startingPrice}${priceUnit}` : 'Contact';
-    const qualDegree      = data.qualDegree || '';
-    const qualCerts       = data.qualCerts  || '';
+    const planMap = {
+      'Free Listing – basic profile': 'free',
+      'Professional Listing – R149/month (full contact, direct enquiries)': 'pro',
+      'Deluxe Package – R399/month (3-month campaign, max exposure)': 'featured',
+    };
+    const catMap = {
+      'Tutor': 'tutor', 'Therapist': 'therapist', 'Curriculum Provider': 'curriculum',
+      'Online / Hybrid School': 'school', 'Educational Consultant': 'consultant',
+      'Extracurricular / Enrichment': 'extracurricular',
+    };
+    const tier          = planMap[data.listingPlan] || 'free';
+    const fullPhone     = data.phoneLocal    ? '+27' + data.phoneLocal.replace(/\D/g, '')    : '';
+    const fullWhatsapp  = data.whatsappLocal ? '+27' + data.whatsappLocal.replace(/\D/g, '') : fullPhone;
+    const priceUnit     = PRICING_UNIT_MAP[data.pricingModel] || '';
+    const priceDisplay  = data.startingPrice ? `R${data.startingPrice}${priceUnit}` : 'Contact';
+    const qualDegree    = data.qualDegree    || '';
+    const qualCerts     = data.qualCerts     || '';
     const qualMemberships = data.qualMemberships || '';
-    const certsCombined   = [qualDegree, qualCerts].filter(Boolean).join(' | ');
-    const svcAreas        = data.serviceAreas || [];
-    let serviceAreaType   = 'national';
-    if (svcAreas.includes('Local') && svcAreas.length === 1)            serviceAreaType = 'local';
+    const certificationsCombined = [qualDegree, qualCerts].filter(Boolean).join(' | ');
+    let serviceAreaType = 'national';
+    const svcAreas = data.serviceAreas || [];
+    if (svcAreas.includes('Local') && svcAreas.length === 1) serviceAreaType = 'local';
     else if (svcAreas.includes('Online only') && svcAreas.length === 1) serviceAreaType = 'online';
-    else if (svcAreas.includes('Local'))                                serviceAreaType = 'local';
-
-    const certFileNames      = certFiles.map(f => f.name);
-    const clearanceFileNames = clearanceFiles.map(f => f.name);
-
-    const providerId  = 'prov_' + Date.now();
+    else if (svcAreas.includes('Local')) serviceAreaType = 'local';
+    const services = [{
+      title: data.serviceTitle || '', description: data.serviceDesc || '',
+      ageGroups: data.ageGroups || [], deliveryMode: data.deliveryMode || 'Online', subjects: data.subjects || '',
+    }];
     const newProvider = {
-      id: providerId,
-      name: data.fullName || '',
-      email: (data.email || '').toLowerCase(),
+      id: 'prov_' + Date.now(), name: data.fullName || '', email: data.email || '',
       accountType: data.accountType || 'Individual Provider',
       plan: tier, listingPlan: tier, tier,
       badge: tier === 'featured' ? 'featured' : tier === 'pro' ? 'verified' : null,
-      status: 'pending',
-      registered: new Date().toISOString(),
-      lastLogin: new Date().toISOString(),
-      category: catToSlug(data.primaryCat),
-      primaryCategory: data.primaryCat || '',
+      status: 'pending', registered: new Date().toISOString(),
+      listingPublic: true, publicToggle: true,
+      image: data.profilePhoto || null, photo: data.profilePhoto || null,
+      category: catMap[data.primaryCat] || 'tutor', primaryCategory: data.primaryCat || '',
       secondaryCategories: data.secondaryCats || [],
-      bio: data.bio || '',
-      experience: data.experience || '',
-      degrees: qualDegree,
-      certifications: certsCombined,
-      qualCerts,
-      certTextEntry: data.qualCerts || '',
-      certDocuments: certFileNames,
-      memberships: qualMemberships,
-      clearanceText: data.clearanceText || '',
-      clearanceDocuments: clearanceFileNames,
+      bio: data.bio || '', yearsExperience: data.experience || '',
+      degrees: qualDegree, certifications: certificationsCombined, qualCerts, memberships: qualMemberships,
+      clearance: data.clearanceText || '',
       tags: data.subjects ? data.subjects.split(',').map(s => s.trim()).filter(Boolean) : [],
-      languages: data.languages || [],
-      serviceTitle: data.serviceTitle || '',
-      serviceDesc: data.serviceDesc || '',
-      subjects: data.subjects || '',
-      ageGroups: data.ageGroups || [],
-      deliveryMode: data.deliveryMode || '',
-      delivery: data.deliveryMode || '',
+      languages: data.languages || [], services,
+      serviceTitle: data.serviceTitle || '', serviceDesc: data.serviceDesc || '',
+      subjects: data.subjects || '', ageGroups: data.ageGroups || [],
       location: data.city ? `${data.city}, ${data.province}` : '',
-      city: data.city || '',
-      province: data.province || '',
-      serviceAreas: svcAreas,
-      serviceAreaType,
+      city: data.city || '', province: data.province || '',
+      delivery: data.deliveryMode || '', deliveryMode: data.deliveryMode || '',
+      serviceAreas: svcAreas, serviceAreaType,
       radius: data.localRadiusNum ? `${data.localRadiusNum} ${data.localRadiusUnit || 'km'}` : '',
-      pricingModel: data.pricingModel || '',
-      startingPrice: priceDisplay, priceFrom: priceDisplay,
+      pricingModel: data.pricingModel || '', startingPrice: priceDisplay, priceFrom: priceDisplay,
       availabilityDays: (data.daysAvailable || []).map(d => d.slice(0, 3)),
       availabilityNotes: data.timeSlots || '',
-      phone: fullPhone, whatsapp: fullWhatsapp,
+      contactName: data.fullName || '', phone: fullPhone, whatsapp: fullWhatsapp,
       contactEmail: data.inquiryEmail || data.email || '',
-      inquiryEmail: data.inquiryEmail || '',
-      website: data.website || '',
-      facebook: data.facebook || '', instagram: data.instagram || '',
-      linkedin: data.linkedin || '', tiktok: data.tiktok || '',
-      twitter: data.twitter || '', youtube: data.youtube || '',
-      image: data.profilePhoto || null, photo: data.profilePhoto || null,
-      rating: null, reviewCount: 0,
-      reviews: { average: 0, count: 0, items: [] },
-      listingPublic: true, publicToggle: true,
+      social: data.website || '', website: data.website || '', facebook: data.facebook || '',
+      rating: null, reviewCount: 0, reviews: { average: 0, count: 0, items: [] },
     };
-
-    // ── Try real API ──────────────────────────────────────────────────────
-    if (apiOnline) {
-      try {
-        const userRes = await fetch(`${API_URL}/auth/register`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email:       data.email.trim().toLowerCase(),
-            password:    data.password,
-            role:        'PROVIDER',
-            name:        data.fullName,
-            accountType: data.accountType || 'Individual Provider',
-          }),
-        });
-        const userData = await userRes.json();
-        if (!userRes.ok) {
-          setFieldErrors({ _submit: userData.message || 'Failed to create account.' });
-          setSubmitting(false);
-          return;
-        }
-        const dbUserId = userData.user.id;
-
-        const formData = new FormData();
-        formData.append('providerData', JSON.stringify({
-          userId: dbUserId,
-          fullName: data.fullName,
-          accountType: data.accountType || 'Individual Provider',
-          bio: data.bio,
-          experience: parseInt(data.experience) || 0,
-          primaryCategory: data.primaryCat,
-          secondaryCategories: data.secondaryCats || [],
-          serviceTitle: data.serviceTitle,
-          serviceDesc: data.serviceDesc,
-          subjects: data.subjects,
-          ageGroups: data.ageGroups || [],
-          deliveryMode: data.deliveryMode,
-          city: data.city,
-          province: data.province,
-          serviceAreaType,
-          radius: data.localRadiusNum ? parseInt(data.localRadiusNum) : null,
-          pricingModel: data.pricingModel,
-          startingPrice: priceDisplay,
-          availabilityDays: (data.daysAvailable || []).map(d => d.slice(0, 3)),
-          availabilityNotes: data.timeSlots,
-          phone: fullPhone,
-          whatsapp: fullWhatsapp,
-          inquiryEmail: data.inquiryEmail,
-          website: data.website || null,
-          facebook: data.facebook || null,
-          instagram: data.instagram || null,
-          linkedin: data.linkedin || null,
-          tiktok: data.tiktok || null,
-          twitter: data.twitter || null,
-          degrees: qualDegree,
-          certifications: certsCombined,
-          certTextEntry: data.qualCerts || '',
-          memberships: qualMemberships,
-          clearanceText: data.clearanceText || null,
-          listingPlan: tier,
-          languages: data.languages || [],
-        }));
-        certFiles.forEach((file, i)      => formData.append(`certFile_${i}`, file, file.name));
-        clearanceFiles.forEach((file, i) => formData.append(`clearanceFile_${i}`, file, file.name));
-
-        const providerRes  = await fetch(`${API_URL}/providers`, { method: 'POST', body: formData });
-        const providerData = await providerRes.json();
-        if (!providerRes.ok) {
-          setFieldErrors({ _submit: providerData.message || 'Failed to create provider profile.' });
-          setSubmitting(false);
-          return;
-        }
-
-        saveToLocalStorage({
-          userId: dbUserId, email: data.email, fullName: data.fullName, tier,
-          newProvider: { ...newProvider, id: providerData.provider?.id || providerId, dbId: providerData.provider?.id },
-        });
-        localStorage.setItem('sah_current_user', JSON.stringify({
-          role: 'client', email: data.email, id: dbUserId, name: data.fullName, plan: tier,
-        }));
-
-        showNotification?.('✅ Registration successful! Your profile is pending admin approval.', 'success');
-        navigate('/client-dashboard');
-        return;
-
-      } catch (apiErr) {
-        console.warn('API call failed, falling back to localStorage:', apiErr.message);
-      }
-    }
-
-    // ── localStorage fallback ──────────────────────────────────────────────
-    const existingUsers     = JSON.parse(localStorage.getItem('sah_users') || '[]');
-    const existingProviders = JSON.parse(localStorage.getItem('sah_providers') || '[]');
-    const emailLower        = data.email.trim().toLowerCase();
-
-    if (
-      existingUsers.find(u => u.email?.toLowerCase() === emailLower) ||
-      existingProviders.find(p => p.email?.toLowerCase() === emailLower)
-    ) {
-      setFieldErrors({ _submit: 'An account with this email already exists.' });
+    try {
+      const existing = JSON.parse(localStorage.getItem('sah_providers') || '[]');
+      existing.push(newProvider);
+      localStorage.setItem('sah_providers', JSON.stringify(existing));
+      localStorage.setItem('sah_current_user', JSON.stringify({
+        role: 'client', email: newProvider.email, id: newProvider.id, name: newProvider.name, plan: tier,
+      }));
+      showNotification?.('✅ Registration successful! Your profile is pending approval.', 'success');
+      setTimeout(() => navigate('/client-dashboard'), 1800);
+    } catch {
+      setFieldErrors({ _submit: 'Registration failed. Please try again.' });
       setSubmitting(false);
       return;
     }
@@ -940,34 +839,35 @@ const Registration = () => {
 
   const fe = fieldErrors;
 
-  // ── Derived ───────────────────────────────────────────────────────────────
-  const allCertBytes = totalFileBytes([...certFiles, ...clearanceFiles]);
-  const overLimit    = allCertBytes > MAX_TOTAL_UPLOAD_BYTES;
-  const primaryFull  = data.primaryCat || '';
-
-  // ─────────────────────────────────────────────────────────────────────────
-  //  STEP RENDERERS
-  // ─────────────────────────────────────────────────────────────────────────
-
-  // Step 1 — Select Plan (API banner removed)
-  const renderStep1 = () => (
-    <div className="sah-plan-grid" style={{ marginTop: 20 }}>
+  // ── STEP 1: Plan selection only (NO terms) ──
+  const renderPlanStep = () => (
+    <div className="sah-plan-grid">
       {PLANS.map(plan => {
         const selected = data.listingPlan === plan.param;
         return (
-          <div key={plan.id} className={`sah-plan-card${selected ? ' selected' : ''}`} onClick={() => set('listingPlan', plan.param)}>
-            <div className="sah-plan-card-head">
+          <div
+            key={plan.id}
+            className={`sah-plan-card${selected ? ' selected' : ''}`}
+            onClick={() => set('listingPlan', plan.param)}
+          >
+            <div className={`sah-plan-card-head${selected ? ' selected-bg' : ''}`}>
               <div>
-                <div className="sah-plan-card-name">{plan.name}</div>
-                <div className="sah-plan-card-desc">{plan.desc}</div>
+                <div className={`sah-plan-card-name${selected ? ' wt' : ''}`}>{plan.name}</div>
+                <div className={`sah-plan-card-desc${selected ? ' wt' : ''}`}>{plan.desc}</div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
                 <div className="sah-plan-price-block">
-                  <div className="sah-plan-price">{plan.price} <small>/month</small></div>
+                  <div className={`sah-plan-price${selected ? ' wt' : ''}`}>
+                    {plan.price} <small className={selected ? 'wt' : ''}>/month</small>
+                  </div>
                 </div>
-                <input type="radio" className="sah-plan-radio" name="listingPlan" value={plan.param}
-                  checked={selected} onChange={() => set('listingPlan', plan.param)}
-                  onClick={e => e.stopPropagation()} />
+                <input
+                  type="radio" className="sah-plan-radio"
+                  name="listingPlan" value={plan.param}
+                  checked={selected}
+                  onChange={() => set('listingPlan', plan.param)}
+                  onClick={e => e.stopPropagation()}
+                />
               </div>
             </div>
             <div className="sah-plan-body">
@@ -979,8 +879,10 @@ const Registration = () => {
                   </li>
                 ))}
               </ul>
-              <button className={`sah-plan-select-btn${selected ? ' selected' : ''}`}
-                onClick={e => { e.stopPropagation(); set('listingPlan', plan.param); }}>
+              <button
+                className={`sah-plan-select-btn${selected ? ' selected' : ''}`}
+                onClick={e => { e.stopPropagation(); set('listingPlan', plan.param); }}
+              >
                 {selected ? <><i className="fas fa-check" /> Selected</> : plan.cta}
               </button>
             </div>
@@ -990,7 +892,6 @@ const Registration = () => {
     </div>
   );
 
-  // Step 2 — Account Setup
   const renderStep2 = () => (
     <div className="sah-form-grid">
       <div className="sah-field sah-full">
@@ -1009,7 +910,8 @@ const Registration = () => {
         <label><i className="fas fa-lock" /> Password <em className="sah-req">*</em></label>
         <div className="sah-pw-wrap">
           <input type={showPw ? 'text' : 'password'} value={data.password || ''} placeholder="Min. 8 characters"
-            className={fe.password ? 'err' : ''} onChange={e => set('password', e.target.value)} />
+            className={fe.password ? 'err' : ''}
+            onChange={e => set('password', e.target.value)} />
           <button type="button" className="sah-pw-eye" onClick={() => setShowPw(s => !s)}>
             <i className={`far fa-eye${showPw ? '-slash' : ''}`} />
           </button>
@@ -1028,18 +930,18 @@ const Registration = () => {
     </div>
   );
 
-  // Step 3 — Identity & Trust
   const renderStep3 = () => (
     <div className="sah-form-grid">
       {/* Profile Photo */}
       <div className="sah-field">
         <label><i className="fas fa-upload" /> Profile Photo / Logo</label>
-        <input type="file" accept="image/*" onChange={e => {
-          const file = e.target.files[0]; if (!file) return;
-          const reader = new FileReader();
-          reader.onload = (ev) => set('profilePhoto', ev.target.result);
-          reader.readAsDataURL(file);
-        }} />
+        <input type="file" accept="image/*"
+          onChange={e => {
+            const file = e.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => { set('profilePhoto', ev.target.result); };
+            reader.readAsDataURL(file);
+          }} />
         {data.profilePhoto && (
           <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
             <img src={data.profilePhoto} alt="Preview" style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--accent)' }} />
@@ -1050,50 +952,54 @@ const Registration = () => {
           </div>
         )}
       </div>
-
-      {/* Years of Experience */}
       <div className="sah-field">
         <label><i className="fas fa-hashtag" /> Years of Experience <em className="sah-req">*</em></label>
         <input type="number" value={data.experience ?? ''} placeholder="e.g. 8" min={0} max={60}
           className={fe.experience ? 'err' : ''} onChange={e => set('experience', e.target.value)} />
         <FieldErr msg={fe.experience} />
       </div>
-
-      {/* Bio */}
       <div className="sah-field sah-full">
         <label><i className="fas fa-align-left" /> Short Bio (150–250 words) <em className="sah-req">*</em></label>
         <textarea value={data.bio || ''} placeholder="Tell families about your teaching philosophy, experience, and approach..."
           className={fe.bio ? 'err' : ''} onChange={e => set('bio', e.target.value)} />
         <FieldErr msg={fe.bio} />
       </div>
-
-      {/* Qualifications */}
       <div className="sah-field sah-full">
         <label><i className="fas fa-certificate" /> Qualifications / Certifications</label>
-
-        {/* Text entry */}
-        <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--muted)', marginBottom: 8 }}>
-            <i className="fas fa-edit" style={{ color: 'var(--accent)', marginRight: 4 }} /> Text Entry (optional)
-          </div>
-          <div className="sah-qual-text-grid">
-            <input type="text" value={data.qualDegree || ''} placeholder="Degree / Diploma (e.g. BEd Honours)" onChange={e => set('qualDegree', e.target.value)} />
-            <input type="text" value={data.qualCerts  || ''} placeholder="Certifications (e.g. SACE Registered)" onChange={e => set('qualCerts',  e.target.value)} />
-            <input type="text" value={data.qualMemberships || ''} placeholder="Memberships (e.g. SA Curriculum Association)" onChange={e => set('qualMemberships', e.target.value)} />
-          </div>
+        <div className="sah-qual-tabs">
+          <button type="button" className={`sah-qual-tab${qualMode === 'text' ? ' active' : ''}`} onClick={() => setQualMode('text')}>
+            <i className="fas fa-edit" /> Enter Text
+          </button>
+          <button type="button" className={`sah-qual-tab${qualMode === 'file' ? ' active' : ''}`} onClick={() => setQualMode('file')}>
+            <i className="fas fa-upload" /> Upload File (auto-fill)
+          </button>
         </div>
-
-        {/* PDF Upload */}
-        <div>
-          <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--muted)', marginBottom: 8 }}>
-            <i className="fas fa-file-pdf" style={{ color: 'var(--accent)', marginRight: 4 }} /> PDF Documents (optional)
+        {qualMode === 'text' ? (
+          <div className="sah-qual-text-grid">
+            <input type="text" value={data.qualDegree || ''} placeholder="Degree / Diploma (e.g. BEd Honours, Mathematics Education)" onChange={e => set('qualDegree', e.target.value)} />
+            <input type="text" value={data.qualCerts  || ''} placeholder="Certifications (e.g. SACE Registered, Umalusi Accredited)"   onChange={e => set('qualCerts',  e.target.value)} />
+            <input type="text" value={data.qualMemberships || ''} placeholder="Memberships (e.g. SA Curriculum Association)"            onChange={e => set('qualMemberships', e.target.value)} />
           </div>
-          <div className="sah-file-upload-zone" onClick={() => certInputRef.current?.click()}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <i className="fas fa-cloud-upload-alt" style={{ fontSize: '1.4rem', color: 'var(--accent)' }} />
-              <div>
-                <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--dark)' }}>Click to upload certificate PDFs</div>
-                <div style={{ fontSize: '0.76rem', marginTop: 2, color: 'var(--muted)' }}>PDF files only · Multiple files allowed · Combined limit {MAX_TOTAL_UPLOAD_MB}MB</div>
+        ) : (
+          <div>
+            <input type="file" accept=".pdf,.doc,.docx,.txt,.jpg,.png" onChange={handleQualFileUpload} />
+            <div className="sah-field-hint" style={{ marginTop: 6 }}>
+              <i className="fas fa-info-circle" /> Upload a .txt file for best auto-fill results. PDF/DOC filenames are used to pre-fill fields.
+            </div>
+            {parsedQualFileName && (
+              <div className="sah-qual-parsed">
+                <i className="fas fa-check-circle" />
+                File parsed: <strong>{parsedQualFileName}</strong> — review the auto-filled fields below and edit as needed.
+              </div>
+            )}
+            <div style={{ marginTop: 14 }}>
+              <p style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--accent)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                {parsedQualFileName ? 'Review & Edit Auto-filled Fields:' : 'Or enter manually:'}
+              </p>
+              <div className="sah-qual-text-grid">
+                <input type="text" value={data.qualDegree || ''} placeholder="Degree / Diploma" onChange={e => set('qualDegree', e.target.value)} />
+                <input type="text" value={data.qualCerts  || ''} placeholder="Certifications"   onChange={e => set('qualCerts',  e.target.value)} />
+                <input type="text" value={data.qualMemberships || ''} placeholder="Memberships" onChange={e => set('qualMemberships', e.target.value)} />
               </div>
             </div>
             <input ref={certInputRef} type="file" accept="application/pdf,.pdf" multiple style={{ display: 'none' }} onChange={handleCertFilesAdd} />
@@ -1113,8 +1019,6 @@ const Registration = () => {
           )}
         </div>
       </div>
-
-      {/* Police Clearance */}
       <div className="sah-field sah-full">
         <label><i className="fas fa-shield-alt" /> Police Clearance (optional)</label>
 
@@ -1124,48 +1028,13 @@ const Registration = () => {
             <i className="fas fa-edit" style={{ color: 'var(--accent)', marginRight: 4 }} /> Text Entry (optional)
           </div>
           <input type="text" value={data.clearanceText || ''} placeholder="e.g. Verified 2024 — Certificate No. 12345678" onChange={e => set('clearanceText', e.target.value)} />
-        </div>
-
-        {/* PDF Upload */}
-        <div>
-          <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--muted)', marginBottom: 8 }}>
-            <i className="fas fa-file-pdf" style={{ color: 'var(--accent)', marginRight: 4 }} /> PDF Documents (optional)
-          </div>
-          <div className="sah-file-upload-zone" onClick={() => clearanceInputRef.current?.click()}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <i className="fas fa-cloud-upload-alt" style={{ fontSize: '1.4rem', color: 'var(--accent)' }} />
-              <div>
-                <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--dark)' }}>Click to upload police clearance PDFs</div>
-                <div style={{ fontSize: '0.76rem', marginTop: 2, color: 'var(--muted)' }}>PDF files only · Multiple files allowed</div>
-              </div>
-            </div>
-            <input ref={clearanceInputRef} type="file" accept="application/pdf,.pdf" multiple style={{ display: 'none' }} onChange={handleClearanceFilesAdd} />
-          </div>
-          {fe.clearanceFiles && <div className="sah-field-err" style={{ marginTop: 8 }}><i className="fas fa-exclamation-circle" /> {fe.clearanceFiles}</div>}
-          {clearanceFiles.length > 0 && (
-            <div className="sah-file-list">
-              {clearanceFiles.map((f, i) => (
-                <div key={i} className="sah-file-item">
-                  <i className="fas fa-file-pdf" style={{ color: '#dc2626', fontSize: '1rem', flexShrink: 0 }} />
-                  <span className="sah-file-item-name">{f.name}</span>
-                  <span className="sah-file-item-size">{formatBytes(f.size)}</span>
-                  <button type="button" className="sah-file-item-remove" onClick={() => removeClearanceFile(i)}><i className="fas fa-times" /></button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {(certFiles.length > 0 || clearanceFiles.length > 0) && (
-          <div className={`sah-file-total${overLimit ? ' warn' : ''}`}>
-            <i className={`fas ${overLimit ? 'fa-exclamation-triangle' : 'fa-hdd'}`} />
-            Total uploaded: <strong>{formatBytes(allCertBytes)}</strong> / {MAX_TOTAL_UPLOAD_MB}MB limit
-            {overLimit && ' — Please remove some files.'}
-          </div>
+        ) : (
+          <>
+            <input type="file" accept=".pdf,.jpg,.png" />
+            {data.clearanceFile && <div className="sah-field-hint"><i className="fas fa-check-circle" style={{ color: 'green' }} /> File uploaded</div>}
+          </>
         )}
       </div>
-
-      {/* Languages */}
       <div className="sah-field sah-full">
         <label><i className="fas fa-check-square" /> Languages Spoken</label>
         <div className="sah-check-group">
@@ -1197,11 +1066,11 @@ const Registration = () => {
         </select>
         <FieldErr msg={fe.primaryCat} />
       </div>
-
       <div className="sah-field">
         <label><i className="fas fa-layer-group" /> Secondary Categories</label>
         <label className={`sah-secondary-toggle${showSecondary ? ' active' : ''}`}>
-          <input type="checkbox" checked={showSecondary} onChange={e => { setShowSecondary(e.target.checked); if (!e.target.checked) set('secondaryCats', []); }} />
+          <input type="checkbox" checked={showSecondary}
+            onChange={e => { setShowSecondary(e.target.checked); if (!e.target.checked) set('secondaryCats', []); }} />
           {showSecondary ? 'I offer other services (click to collapse)' : 'I also offer other services'}
         </label>
         {showSecondary && (
@@ -1229,7 +1098,6 @@ const Registration = () => {
           </div>
         )}
       </div>
-
       <div className="sah-field sah-full">
         <label><i className="fas fa-edit" /> Service Title <em className="sah-req">*</em></label>
         <input type="text" value={data.serviceTitle || ''} placeholder="e.g. Mathematics Tutor for Grades 10–12"
@@ -1290,7 +1158,10 @@ const Registration = () => {
         <label><i className="fas fa-dot-circle" /> Service Area <em className="sah-req">*</em></label>
         <div className="sah-check-group">
           {['Local','National','Online only'].map(m => (
-            <label key={m}><input type="checkbox" value={m} checked={(data.serviceAreas || []).includes(m)} onChange={() => toggleServiceArea(m)} />{m}</label>
+            <label key={m}>
+              <input type="checkbox" value={m} checked={(data.serviceAreas || []).includes(m)} onChange={() => toggleServiceArea(m)} />
+              {m}
+            </label>
           ))}
         </div>
         <div className="sah-field-hint"><i className="fas fa-info-circle" /> You may select more than one option.</div>
@@ -1365,7 +1236,7 @@ const Registration = () => {
     );
   };
 
-  // Step 7 — Contact Details
+  // ── Step 7: Contact details + TERMS AND CONDITIONS (moved from step 1) ──
   const renderStep7 = () => {
     const availableToAdd = EXTRA_SOCIALS.filter(s => !addedSocials.includes(s.key));
     return (
@@ -1451,6 +1322,20 @@ const Registration = () => {
             </div>
           </div>
         )}
+
+        {/* ── TERMS AND CONDITIONS — moved here from step 1 ── */}
+        <div className="sah-full" style={{ marginTop: 8 }}>
+          <div style={{ height: 1, background: 'rgba(0,0,0,0.08)', marginBottom: 20 }} />
+          <label className={`sah-terms-row${data.terms ? ' checked' : ''}${fe.terms ? ' err-border' : ''}`}>
+            <input type="checkbox" checked={!!data.terms} onChange={e => set('terms', e.target.checked)} />
+            <span>
+              I agree to the{' '}
+              <a href="/terms" target="_blank" rel="noreferrer">Terms and Community Guidelines</a>
+              {' '}— by registering you confirm your details are accurate.
+            </span>
+          </label>
+          {fe.terms && <div className="sah-terms-err"><i className="fas fa-exclamation-circle" /> {fe.terms}</div>}
+        </div>
       </div>
     );
   };
@@ -1572,7 +1457,10 @@ const Registration = () => {
       <section className="sah-reg-hero">
         <div className="sah-reg-hero-bg" />
         <div className="sah-reg-hero-inner">
-          <h1 className="sah-reg-hero-title">Become a <em>Trusted Provider</em></h1>
+          {/* ── CHANGED: "Trusted Provider" → "Service Provider" ── */}
+          <h1 className="sah-reg-hero-title">
+            Become a <em>Service Provider</em>
+          </h1>
           <div className="sah-step-trail">
             {STEPS.map((s, i) => {
               const n = i + 1;
