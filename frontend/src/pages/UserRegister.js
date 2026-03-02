@@ -108,6 +108,23 @@ const CSS = `
   .ur-success-banner { background:#ecfdf5; border:1.5px solid #a7f3d0; border-radius:var(--r); padding:14px 18px; color:#065f46; font-size:0.9rem; font-weight:700; margin-bottom:18px; display:flex; align-items:center; gap:10px; }
   .ur-success-banner i { font-size:1.1rem; color:#16a34a; flex-shrink:0; }
 
+  /* Success screen styles */
+  .ur-success-wrap { padding:40px 36px; text-align:center; }
+  .ur-success-icon { width:70px; height:70px; background:#10b981; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 20px; color:white; font-size:2rem; }
+  .ur-success-title { font-family:'Playfair Display',serif; font-size:1.8rem; font-weight:800; color:var(--dark); margin-bottom:8px; }
+  .ur-success-email { font-size:1rem; color:var(--acc); font-weight:600; margin-bottom:20px; padding:8px 16px; background:var(--acc-l); border-radius:30px; display:inline-block; }
+  .ur-success-msg { font-size:0.95rem; color:var(--mid); max-width:450px; margin:0 auto 30px; line-height:1.6; }
+  .ur-success-steps { display:flex; flex-direction:column; gap:15px; max-width:400px; margin:0 auto 30px; }
+  .ur-success-step { display:flex; align-items:flex-start; gap:15px; text-align:left; }
+  .ur-success-step-num { width:28px; height:28px; background:var(--acc); color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.85rem; font-weight:700; flex-shrink:0; }
+  .ur-success-step-text { font-size:0.88rem; color:var(--mid); }
+  .ur-success-step-text strong { color:var(--dark); display:block; margin-bottom:2px; }
+  .ur-success-login-btn { background:var(--acc); color:white; border:none; padding:14px 28px; border-radius:var(--r); font-size:1rem; font-weight:700; cursor:pointer; transition:background 0.15s; display:inline-flex; align-items:center; gap:8px; margin-bottom:20px; }
+  .ur-success-login-btn:hover { background:var(--acc-d); }
+  .ur-success-home { font-size:0.85rem; color:var(--muted); }
+  .ur-success-home a { color:var(--acc); font-weight:600; text-decoration:none; }
+  .ur-success-home a:hover { text-decoration:underline; }
+
   /* Responsive */
   @media(max-width:660px) {
     .ur-cols { grid-template-columns:1fr; }
@@ -116,6 +133,8 @@ const CSS = `
     .ur-hdr { padding:0 16px; }
     .ur-hero-inner { padding:32px 16px; }
     .ur-body { padding:24px 14px 48px; }
+    .ur-success-wrap { padding:30px 20px; }
+    .ur-success-title { font-size:1.5rem; }
   }
 `;
 
@@ -123,8 +142,8 @@ const API_URL = 'http://localhost:5000/api';
 
 const UserRegister = () => {
   const navigate             = useNavigate();
-  const { registerUser }     = useAuth();
-  const { showNotification } = useNotification();
+  const { register }         = useAuth(); // Fixed: was registerUser, should be register
+  const { showNotification } = useNotification() || {};
 
   const [username,   setUsername]   = useState('');
   const [email,      setEmail]      = useState('');
@@ -136,6 +155,8 @@ const UserRegister = () => {
   const [submitErr,  setSubmitErr]  = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [isRegistered, setIsRegistered] = useState(false); // Fixed: added registered state
+  const [registeredEmail, setRegisteredEmail] = useState(''); // Fixed: added registeredEmail state
 
   useEffect(() => {
     injectHead();
@@ -148,11 +169,14 @@ const UserRegister = () => {
 
   const validate = () => {
     const e = {};
-    const uname = username.trim();
+    const uname = username?.trim() || '';
     if (!uname || uname.length < 3)    e.username = 'Username must be at least 3 characters.';
     else if (/\s/.test(uname))         e.username = 'Username cannot contain spaces.';
     else if (!/^[a-zA-Z0-9_.-]+$/.test(uname)) e.username = 'Username may only contain letters, numbers, _ . -';
-    if (!email.trim() || !/^\S+@\S+\.\S+$/.test(email)) e.email = 'Enter a valid email address.';
+    
+    const userEmail = email?.trim() || '';
+    if (!userEmail || !/^\S+@\S+\.\S+$/.test(userEmail)) e.email = 'Enter a valid email address.';
+    
     if (!password || password.length < 8) e.password = 'Password must be at least 8 characters.';
     if (password !== confirm)          e.confirm = 'Passwords do not match.';
     return e;
@@ -160,56 +184,89 @@ const UserRegister = () => {
 
   const handleSubmit = async () => {
     const errs = validate();
-    if (Object.keys(errs).length) { setErrors(errs); return; }
-    setErrors({}); setSubmitErr(''); setSubmitting(true);
+    if (Object.keys(errs).length) { 
+      setErrors(errs); 
+      return; 
+    }
+    
+    setErrors({}); 
+    setSubmitErr(''); 
+    setSubmitting(true);
 
     try {
-      const result = registerUser
-        ? await registerUser({ username: username.trim(), email: email.trim(), password })
-        : { success: false };
+      // Try to use auth context register first
+      const result = register
+        ? await register({ 
+            username: username?.trim() || '', 
+            email: email?.trim() || '', 
+            password: password || '' 
+          })
+        : null;
 
-      if (!result?.success) {
-        // ── localStorage fallback ──
-        const users = JSON.parse(localStorage.getItem('sah_users') || '[]');
-        const emailTaken    = users.find(u => u.email?.toLowerCase()    === email.trim().toLowerCase());
-        const usernameTaken = users.find(u => u.username?.toLowerCase() === username.trim().toLowerCase());
-        if (emailTaken)    { setSubmitErr('An account with this email already exists.');              setSubmitting(false); return; }
-        if (usernameTaken) { setSubmitErr('That username is already taken — please choose another.'); setSubmitting(false); return; }
-
-        const newUser = {
-          id:         'user_' + Date.now(),
-          username:   username.trim(),
-          email:      email.trim().toLowerCase(),
-          role:       'USER',
-          registered: new Date().toISOString(),
-          lastLogin:  new Date().toISOString(),
-        };
-        users.push(newUser);
-        localStorage.setItem('sah_users', JSON.stringify(users));
-
-        // ── Auth log ──
-        const logs = JSON.parse(localStorage.getItem('sah_auth_logs') || '[]');
-        logs.unshift({
-          userId: newUser.id, username: newUser.username, email: newUser.email,
-          role: 'USER', event: 'REGISTER', timestamp: new Date().toISOString(),
-        });
-        localStorage.setItem('sah_auth_logs', JSON.stringify(logs.slice(0, 500)));
-
-        // ── Auto-login immediately ──
-        localStorage.setItem('sah_current_user', JSON.stringify({
-          role: 'user', email: newUser.email, id: newUser.id, username: newUser.username,
-        }));
-        localStorage.setItem('sah_user',  JSON.stringify({
-          id: newUser.id, email: newUser.email, username: newUser.username, role: 'USER',
-        }));
-        localStorage.setItem('sah_token', 'local_' + newUser.id);
+      if (result?.success) {
+        const displayName = username?.trim() || '';
+        setSuccessMsg(`Welcome, ${displayName}! Your account has been created.`);
+        if (showNotification && typeof showNotification === 'function') {
+          showNotification(`✅ Welcome, ${displayName}! You're registered and logged in.`, 'success');
+        }
+        setTimeout(() => navigate('/'), 2400);
+        return;
       }
 
-      const displayName = username.trim();
-      setSuccessMsg(`Welcome, ${displayName}! Your account has been created and you are now logged in.`);
-      showNotification?.(`✅ Welcome, ${displayName}! You're registered and logged in.`, 'success');
-      setTimeout(() => navigate('/'), 2400);
-    } catch {
+      // ── localStorage fallback ──
+      const users = JSON.parse(localStorage.getItem('sah_users') || '[]');
+      const emailTrimmed = email?.trim()?.toLowerCase() || '';
+      const usernameTrimmed = username?.trim() || '';
+      
+      const emailTaken    = users.find(u => u?.email?.toLowerCase() === emailTrimmed);
+      const usernameTaken = users.find(u => u?.username?.toLowerCase() === usernameTrimmed?.toLowerCase());
+      
+      if (emailTaken) { 
+        setSubmitErr('An account with this email already exists.');              
+        setSubmitting(false); 
+        return; 
+      }
+      if (usernameTaken) { 
+        setSubmitErr('That username is already taken — please choose another.'); 
+        setSubmitting(false); 
+        return; 
+      }
+
+      const newUser = {
+        id:         'user_' + Date.now(),
+        username:   usernameTrimmed,
+        email:      emailTrimmed,
+        role:       'USER',
+        registered: new Date().toISOString(),
+        lastLogin:  new Date().toISOString(),
+      };
+      
+      users.push(newUser);
+      localStorage.setItem('sah_users', JSON.stringify(users));
+
+      // ── Auth log ──
+      const logs = JSON.parse(localStorage.getItem('sah_auth_logs') || '[]');
+      logs.unshift({
+        userId: newUser.id, 
+        username: newUser.username, 
+        email: newUser.email,
+        role: 'USER', 
+        event: 'REGISTER', 
+        timestamp: new Date().toISOString(),
+      });
+      localStorage.setItem('sah_auth_logs', JSON.stringify(logs.slice(0, 500)));
+
+      // Set registered state for success screen
+      setIsRegistered(true);
+      setRegisteredEmail(emailTrimmed);
+      
+      const displayName = usernameTrimmed;
+      if (showNotification && typeof showNotification === 'function') {
+        showNotification(`✅ Welcome, ${displayName}! Registration successful.`, 'success');
+      }
+      
+    } catch (error) {
+      console.error('Registration error:', error);
       setSubmitErr('Registration failed. Please try again.');
     } finally {
       setSubmitting(false);
@@ -219,7 +276,7 @@ const UserRegister = () => {
   const fe = errors;
 
   /* ── Confirmation / success screen ── */
-  if (registered) {
+  if (isRegistered) {
     return (
       <div className="ur-wrap">
         <header className="ur-hdr">
@@ -359,7 +416,10 @@ const UserRegister = () => {
                     type="text" value={username}
                     placeholder="e.g. sarah_learns"
                     className={fe.username ? 'err' : ''}
-                    onChange={e => { setUsername(e.target.value); setErrors(p => ({ ...p, username: '' })); }}
+                    onChange={e => { 
+                      setUsername(e.target.value); 
+                      setErrors(p => ({ ...p, username: '' })); 
+                    }}
                   />
                   {fe.username
                     ? <div className="ur-field-err"><i className="fas fa-exclamation-circle" /> {fe.username}</div>
@@ -374,7 +434,10 @@ const UserRegister = () => {
                     type="email" value={email}
                     placeholder="you@example.co.za"
                     className={fe.email ? 'err' : ''}
-                    onChange={e => { setEmail(e.target.value); setErrors(p => ({ ...p, email: '' })); }}
+                    onChange={e => { 
+                      setEmail(e.target.value); 
+                      setErrors(p => ({ ...p, email: '' })); 
+                    }}
                   />
                   {fe.email && <div className="ur-field-err"><i className="fas fa-exclamation-circle" /> {fe.email}</div>}
                 </div>
@@ -387,7 +450,10 @@ const UserRegister = () => {
                       type={showPw ? 'text' : 'password'} value={password}
                       placeholder="Min. 8 characters"
                       className={fe.password ? 'err' : ''}
-                      onChange={e => { setPassword(e.target.value); setErrors(p => ({ ...p, password: '' })); }}
+                      onChange={e => { 
+                        setPassword(e.target.value); 
+                        setErrors(p => ({ ...p, password: '' })); 
+                      }}
                     />
                     <button type="button" className="ur-pw-eye" onClick={() => setShowPw(s => !s)}>
                       <i className={`far fa-eye${showPw ? '-slash' : ''}`} />
@@ -404,7 +470,10 @@ const UserRegister = () => {
                       type={showCf ? 'text' : 'password'} value={confirm}
                       placeholder="Repeat your password"
                       className={fe.confirm ? 'err' : ''}
-                      onChange={e => { setConfirm(e.target.value); setErrors(p => ({ ...p, confirm: '' })); }}
+                      onChange={e => { 
+                        setConfirm(e.target.value); 
+                        setErrors(p => ({ ...p, confirm: '' })); 
+                      }}
                     />
                     <button type="button" className="ur-pw-eye" onClick={() => setShowCf(s => !s)}>
                       <i className={`far fa-eye${showCf ? '-slash' : ''}`} />

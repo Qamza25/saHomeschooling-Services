@@ -33,7 +33,6 @@ const CSS = `
   .sah-wrap img{display:block;max-width:100%;}
   .sah-container{max-width:1280px;margin:0 auto;padding:0 32px;}
 
-  /* HEADER */
   .sah-header{position:sticky;top:0;z-index:1000;height:var(--header-h);background:#5a5a5a;}
   .sah-nav-inner{height:100%;display:flex;justify-content:space-between;align-items:center;}
   .sah-brand{display:flex;align-items:center;gap:12px;}
@@ -47,137 +46,43 @@ const CSS = `
   .sah-nav-ctas{display:flex;align-items:center;gap:8px;}
   .sah-btn-ghost-nav{padding:7px 16px;border-radius:5px;border:1.5px solid rgba(255,255,255,0.6);background:transparent;color:#fff;font-weight:600;font-size:0.85rem;transition:all 0.15s;cursor:pointer;}
   .sah-btn-ghost-nav:hover{border-color:#fff;background:rgba(255,255,255,0.2);}
-  .sah-btn-solid-nav{
-    padding:7px 18px;border-radius:5px;background:var(--accent);
-    color:#fff !important;font-weight:700;font-size:0.85rem;border:none;
-    transition:background 0.15s;box-shadow:none !important;
-    display:inline-block;cursor:pointer;text-decoration:none;
-  }
+  .sah-btn-solid-nav{padding:7px 18px;border-radius:5px;background:var(--accent);color:#fff !important;font-weight:700;font-size:0.85rem;border:none;transition:background 0.15s;display:inline-block;cursor:pointer;text-decoration:none;}
   .sah-btn-solid-nav:hover{background:var(--accent-dark);}
 
-  /* PROFILE ICON FOR LOGGED-IN USERS */
-  .sah-profile-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: var(--accent);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    font-size: 1.1rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.15s;
-    border: 2px solid rgba(255,255,255,0.2);
-    text-decoration: none;
-  }
-  .sah-profile-icon:hover {
-    background: var(--accent-dark);
-    transform: scale(1.05);
-    border-color: rgba(255,255,255,0.4);
-  }
-  .sah-nav-user {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  .sah-nav-user-info {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    line-height: 1.2;
-  }
-  .sah-nav-user-label {
-    font-size: 0.72rem;
-    color: rgba(255,255,255,0.6);
-    font-weight: 500;
-  }
-  .sah-nav-user-name {
-    font-size: 0.8rem;
-    color: rgba(255,255,255,0.9);
-    font-weight: 700;
-    max-width: 160px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .sah-btn-logout {
-    padding: 7px 18px;
-    border-radius: 5px;
-    background: var(--accent);
-    color: #fff !important;
-    font-weight: 700;
-    font-size: 0.85rem;
-    border: none;
-    transition: all 0.15s;
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    cursor: pointer;
-  }
-  .sah-btn-logout:hover {
-    background: var(--accent-dark);
-  }
-
-  /* HERO */
   .sah-hero{position:relative;min-height:88vh;display:flex;align-items:center;overflow:hidden;background:#1e1e1e;}
-  .sah-hero-bg{position:absolute;inset:0;z-index:0;
-    background-image:url('https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=1600&auto=format&fit=crop&q=80');
-    background-size:cover;background-position:center 30%;}
+  .sah-hero-bg{position:absolute;inset:0;z-index:0;background-image:url('https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=1600&auto=format&fit=crop&q=80');background-size:cover;background-position:center 30%;}
   .sah-hero-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(100deg,rgba(20,20,20,0.90) 0%,rgba(50,50,50,0.80) 45%,rgba(15,15,15,0.62) 100%);}
   .sah-hero-inner{position:relative;z-index:2;padding:60px 0;width:100%;}
   .sah-hero-top{text-align:center;margin-bottom:36px;}
   .sah-hero-h1{font-family:'Playfair Display',serif;font-size:clamp(2.5rem,5.5vw,4.4rem);font-weight:900;line-height:1.07;color:#fff;margin-bottom:22px;letter-spacing:-0.3px;}
   .sah-hero-h1 em{font-style:italic;color:rgba(255,255,255,0.9);}
 
-  /* SEARCH BAR */
   .sah-hero-search{display:flex;flex-direction:row;align-items:stretch;background:#fff;border-radius:var(--radius);overflow:hidden;max-width:780px;margin:0 auto;box-shadow:0 8px 40px rgba(0,0,0,0.4);width:100%;}
   .sah-hs-icon{display:flex;align-items:center;padding:0 14px;color:#aaa;font-size:0.9rem;flex-shrink:0;}
-  .sah-hero-search input{flex:1;min-width:0;border:none;outline:none;padding:16px 6px;font-family:'DM Sans',sans-serif;font-size:0.95rem;color:var(--dark);background:transparent;-webkit-appearance:none;appearance:none;}
+  .sah-hero-search input{flex:1;min-width:0;border:none;outline:none;padding:16px 6px;font-family:'DM Sans',sans-serif;font-size:0.95rem;color:var(--dark);background:transparent;}
   .sah-hero-search input::placeholder{color:#bbb;}
   .sah-hs-sep{width:1px;background:var(--border);margin:10px 0;flex-shrink:0;}
-  .sah-hero-search select{border:none;outline:none;padding:0 14px;background:transparent;font-family:'DM Sans',sans-serif;font-size:0.88rem;color:var(--muted);cursor:pointer;min-width:140px;flex-shrink:0;-webkit-appearance:none;-moz-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23aaa' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;}
+  .sah-hero-search select{border:none;outline:none;padding:0 14px;background:transparent;font-family:'DM Sans',sans-serif;font-size:0.88rem;color:var(--muted);cursor:pointer;min-width:140px;flex-shrink:0;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23aaa' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;}
   .sah-hs-btn{background:var(--accent);color:#fff;border:none;padding:0 26px;font-family:'DM Sans',sans-serif;font-weight:700;font-size:0.92rem;white-space:nowrap;transition:background 0.15s;flex-shrink:0;cursor:pointer;}
   .sah-hs-btn:hover{background:var(--accent-dark);}
 
-  /* HERO TAGLINE — restored Playfair Display from old code */
   .sah-hero-tagline{text-align:center;margin-top:22px;margin-bottom:36px;}
-  .sah-hero-tagline h2{
-    font-family:'Playfair Display',serif;
-    font-size:clamp(1.1rem,2.2vw,1.4rem);
-    font-weight:800;color:#fff;margin-bottom:8px;line-height:1.25;
-  }
-  .sah-hero-tagline p{
-    font-family:'Playfair Display',serif;
-    font-style:italic;
-    font-size:clamp(0.88rem,1.3vw,0.98rem);
-    color:rgba(255,255,255,0.78);
-    max-width:580px;margin:0 auto 22px;line-height:1.7;
-  }
+  .sah-hero-tagline h2{font-family:'Playfair Display',serif;font-size:clamp(1.1rem,2.2vw,1.4rem);font-weight:800;color:#fff;margin-bottom:8px;line-height:1.25;}
+  .sah-hero-tagline p{font-family:'Playfair Display',serif;font-style:italic;font-size:clamp(0.88rem,1.3vw,0.98rem);color:rgba(255,255,255,0.78);max-width:580px;margin:0 auto 22px;line-height:1.7;}
 
-  /* BECOME PROVIDER BUTTON — restored from old code with active/chevron state */
-  .sah-become-btn{/* glow removed */
-    display:inline-flex;align-items:center;gap:10px;padding:13px 30px;
-    background:var(--accent);color:#fff !important;border:none;
-    border-radius:var(--radius);font-weight:700;font-size:0.97rem;
-    transition:background 0.15s,transform 0.15s;cursor:pointer;
-    box-shadow:none;text-decoration:none;
-  }
+  .sah-become-btn{display:inline-flex;align-items:center;gap:10px;padding:13px 30px;background:var(--accent);color:#fff !important;border:none;border-radius:var(--radius);font-weight:700;font-size:0.97rem;transition:background 0.15s,transform 0.15s;cursor:pointer;text-decoration:none;}
   .sah-become-btn:hover{background:var(--accent-dark);transform:translateY(-2px);}
-  .sah-become-btn.active{background:#3a3a3a;box-shadow:none;}
+  .sah-become-btn.active{background:#3a3a3a;}
   .sah-become-btn.active:hover{background:#1e1e1e;transform:none;}
   .sah-become-btn .sah-chev{font-size:0.78rem;transition:transform 0.3s ease;}
   .sah-become-btn.active .sah-chev{transform:rotate(180deg);}
 
-  /* PLANS ACCORDION — restored from old code */
   .sah-hero-plans-wrap{display:grid;grid-template-rows:0fr;transition:grid-template-rows 0.45s cubic-bezier(0.4,0,0.2,1);}
   .sah-hero-plans-wrap.open{grid-template-rows:1fr;}
   .sah-hero-plans-inner{overflow:hidden;}
   .sah-hero-plans-grid-outer{padding-top:24px;padding-bottom:8px;}
   .sah-hero-plans-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
 
-  /* PLAN CARDS */
   .sah-plan-item{border:1px solid rgba(255,255,255,0.28);border-radius:var(--radius-lg);background:rgba(20,20,20,0.58);transition:border-color 0.2s,background 0.2s;cursor:pointer;overflow:hidden;user-select:none;backdrop-filter:blur(6px);display:flex;flex-direction:column;}
   .sah-plan-item:hover{border-color:rgba(201,98,26,0.65);background:rgba(20,20,20,0.68);}
   .sah-plan-item.highlight{border-color:var(--accent);background:rgba(20,20,20,0.70);box-shadow:0 0 0 1px var(--accent);}
@@ -204,7 +109,6 @@ const CSS = `
   .sah-plan-cta-link{display:inline-flex;align-items:center;gap:7px;padding:8px 18px;background:var(--accent);color:#fff !important;border:none;border-radius:var(--radius);font-size:0.82rem;font-weight:700;transition:background 0.15s;cursor:pointer;text-decoration:none;}
   .sah-plan-cta-link:hover{background:var(--accent-dark);}
 
-  /* FILTER BAR */
   .sah-filter-bar{background:var(--white);border-bottom:1px solid var(--border);}
   .sah-filter-bar-row{display:flex;align-items:center;gap:6px;padding:16px 0;overflow-x:auto;-webkit-overflow-scrolling:touch;}
   .sah-filter-bar-row::-webkit-scrollbar{display:none;}
@@ -214,7 +118,9 @@ const CSS = `
   .sah-fpill.active{background:var(--grey);color:#fff;border-color:var(--grey);}
   .sah-fpill i{font-size:0.95rem;}
 
-  /* PROVIDERS */
+  .sah-featured-banner{display:flex;align-items:center;gap:8px;padding:10px 16px;background:rgba(201,98,26,0.15);border:1px solid rgba(201,98,26,0.3);border-radius:var(--radius);margin-bottom:16px;font-size:0.82rem;font-weight:600;color:rgba(255,255,255,0.85);}
+  .sah-featured-banner i{color:var(--accent);}
+
   .sah-providers-section{padding:60px 0 76px;background:var(--light-bg);}
   .sah-sec-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:32px;}
   .sah-sec-eyebrow{display:block;font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:2.5px;color:var(--accent);margin-bottom:5px;}
@@ -235,6 +141,7 @@ const CSS = `
   .sah-cbadge-featured{background:var(--red);color:#fff;}
   .sah-cbadge-new{background:#0d7d6c;color:#fff;}
   .sah-cbadge-verified{background:#3a3a3a;color:#fff;}
+  .sah-cbadge-spotlight{background:var(--accent);color:#fff;}
   .sah-card-save{position:absolute;top:9px;right:9px;width:28px;height:28px;border-radius:4px;background:rgba(255,255,255,0.9);border:none;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:0.8rem;transition:color 0.15s;}
   .sah-card-save:hover{color:var(--accent);}
   .sah-card-provider-row{display:flex;align-items:center;gap:8px;padding:11px 13px 0;}
@@ -259,11 +166,6 @@ const CSS = `
   .sah-grid-empty i{font-size:2.2rem;margin-bottom:12px;opacity:0.3;display:block;}
   .sah-grid-empty h3{font-family:'Playfair Display',serif;font-size:1.25rem;color:var(--dark);margin-bottom:7px;}
 
-  /* SECTION LABEL DIVIDER */
-  .sah-section-label{display:flex;align-items:center;gap:12px;margin:0 0 16px;font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:1.8px;color:var(--accent);}
-  .sah-section-label::after{content:'';flex:1;height:1px;background:rgba(201,98,26,0.2);}
-
-  /* HOW IT WORKS */
   .sah-how-section{padding:76px 0;background:var(--white);}
   .sah-how-header{margin-bottom:44px;}
   .sah-steps-grid{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;}
@@ -273,7 +175,6 @@ const CSS = `
   .sah-step h3{font-weight:700;font-size:0.97rem;color:var(--dark);margin-bottom:9px;}
   .sah-step p{font-size:0.85rem;color:var(--muted);line-height:1.65;}
 
-  /* FOOTER */
   .sah-footer{background:#0e0e0e;color:rgba(255,255,255,0.55);padding:60px 0 32px;}
   .sah-footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:48px;margin-bottom:44px;}
   .sah-footer-logo{font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:800;color:#fff;display:block;margin-bottom:12px;}
@@ -301,7 +202,6 @@ const CSS = `
   .sah-footer-soc{width:34px;height:34px;border-radius:5px;background:rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.45);font-size:0.84rem;text-decoration:none;transition:all 0.15s;}
   .sah-footer-soc:hover{background:var(--accent);color:#fff;}
 
-  /* REGISTER MODAL */
   .sah-modal-overlay{position:fixed;inset:0;z-index:9000;background:rgba(8,0,4,0.75);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity 0.22s;}
   .sah-modal-overlay.open{opacity:1;pointer-events:all;}
   .sah-modal-box{background:var(--white);width:460px;max-width:93vw;border-radius:var(--radius-lg);box-shadow:0 28px 72px rgba(0,0,0,0.28);overflow:hidden;transform:translateY(14px);transition:transform 0.22s ease;}
@@ -323,12 +223,10 @@ const CSS = `
   .sah-modal-switch{text-align:center;margin-top:12px;font-size:0.85rem;color:var(--muted);}
   .sah-modal-switch a{color:var(--accent);font-weight:600;}
 
-  /* TOAST */
   .sah-toast{position:fixed;bottom:22px;right:22px;background:var(--grey);color:#fff;padding:11px 18px;border-radius:var(--radius);font-size:0.88rem;font-weight:600;box-shadow:var(--shadow-lg);transform:translateY(60px);opacity:0;transition:all 0.26s;z-index:9999;display:flex;align-items:center;gap:8px;pointer-events:none;}
   .sah-toast.show{transform:translateY(0);opacity:1;}
   .sah-toast i{color:#4ade80;}
 
-  /* RESPONSIVE */
   @media(max-width:1100px){
     .sah-provider-grid{grid-template-columns:repeat(2,1fr);}
     .sah-steps-grid{grid-template-columns:repeat(2,1fr);}
@@ -345,7 +243,6 @@ const CSS = `
     .sah-step:last-child{border-bottom:none;}
     .sah-fpill{font-size:0.95rem;padding:9px 18px;}
     .sah-hero-plans-grid{grid-template-columns:1fr;}
-    .sah-nav-user-info{display:none;}
   }
   @media(max-width:480px){
     .sah-provider-grid{grid-template-columns:1fr;}
@@ -360,19 +257,15 @@ const CSS = `
   }
 `;
 
-/* ─── FEATURED SLOT HELPERS — restored from old code ───────────────────────── */
-function getFeaturedSlotProviderIds() {
+/* ─── AUTH HELPERS ──────────────────────────────────────────────────────────── */
+function getCurrentUser() {
   try {
     const u = localStorage.getItem("sah_current_user");
     if (!u) return null;
     const parsed = JSON.parse(u);
-    // Validate that parsed has required fields
-    if (parsed && parsed.role) {
-      return parsed;
-    }
+    return (parsed && parsed.role) ? parsed : null;
+  } catch {
     return null;
-  } catch { 
-    return null; 
   }
 }
 
@@ -381,15 +274,25 @@ function clearCurrentUser() {
   localStorage.removeItem("sah_token");
 }
 
-function isLoggedIn() {
-  return getCurrentUser() !== null;
-}
+/* ─── FEATURED SLOT HELPERS ─────────────────────────────────────────────────── */
+const FEATURED_SLOT_COUNT = 4;
 
-function getFeaturedSlotInfo() {
+function getFeaturedSlotProviderIds() {
   try {
     const slots = JSON.parse(localStorage.getItem("sah_featured_slots") || "[]");
-    return slots.filter(s => s.provider).map(s => s.provider);
-  } catch { return []; }
+    return slots.filter(s => s.provider && s.provider.id).map(s => ({ id: s.provider.id }));
+  } catch {
+    return [];
+  }
+}
+
+function getFeaturedSlotProviderNames() {
+  try {
+    const slots = JSON.parse(localStorage.getItem("sah_featured_slots") || "[]");
+    return slots.filter(s => s.provider && s.provider.name).map(s => s.provider.name);
+  } catch {
+    return [];
+  }
 }
 
 /* ─── DATA ──────────────────────────────────────────────────────────────────── */
@@ -400,11 +303,8 @@ const SEED = [
     image:"https://images.unsplash.com/photo-1522202176988-66273c2b033f?w=600&auto=format&fit=crop&q=75",
     priceFrom:"R280/hr",badge:"featured",rating:4.9,reviewCount:62,tier:"featured",
     registered:"2025-01-10T08:00:00Z",status:"approved",
-    primaryCategory:"Tutor",city:"Johannesburg",province:"Gauteng",deliveryMode:"Online & In-person",
+    primaryCategory:"Tutor",city:"Johannesburg",province:"Gauteng",
     bio:"Specialist STEM tutors for Grades 8–12.",tags:["Mathematics","Physical Sciences","Life Sciences","Grades 8–12"],
-    ageGroups:["11–13","14–18"],startingPrice:"R280/hr",availabilityDays:["Mon","Tue","Wed","Thu","Fri"],
-    phone:"+27 11 000 1111",contactEmail:"info@stemmastery.co.za",certifications:"SACE Registered",listingPlan:"featured",
-    reviews:{average:4.9,count:62,items:[{reviewer:"Nomsa P.",rating:5,text:"My son went from 40% to 82% in Maths."}]}
   },
   {
     id:"s2",name:"Creative Minds Curriculum",category:"curriculum",location:"Cape Town, Western Cape",
@@ -412,11 +312,8 @@ const SEED = [
     image:"https://images.unsplash.com/photo-1509062522246-3755977927d7?w=600&auto=format&fit=crop&q=75",
     priceFrom:"R4 200/term",badge:"verified",rating:5.0,reviewCount:34,tier:"pro",
     registered:"2025-01-12T09:00:00Z",status:"approved",
-    primaryCategory:"Curriculum Provider",city:"Cape Town",province:"Western Cape",deliveryMode:"Online",
+    primaryCategory:"Curriculum Provider",city:"Cape Town",province:"Western Cape",
     bio:"Award-winning home education curriculum.",tags:["CAPS Aligned","Full Curriculum","Gr R–12"],
-    ageGroups:["5–7","8–10","11–13","14–18"],startingPrice:"R4 200/term",
-    phone:"+27 21 000 2222",contactEmail:"hello@creativeminds.co.za",certifications:"Umalusi Accredited",listingPlan:"pro",
-    reviews:{average:5.0,count:34,items:[{reviewer:"Riana V.",rating:5,text:"Best investment for our homeschool journey."}]}
   },
   {
     id:"s3",name:"EduTherapy SA",category:"therapist",location:"Durban, KwaZulu-Natal",
@@ -424,11 +321,8 @@ const SEED = [
     image:"https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=600&auto=format&fit=crop&q=75",
     priceFrom:"R650/session",badge:"featured",rating:4.8,reviewCount:47,tier:"featured",
     registered:"2025-01-14T10:00:00Z",status:"approved",
-    primaryCategory:"Therapist",city:"Durban",province:"KwaZulu-Natal",deliveryMode:"Hybrid",
+    primaryCategory:"Therapist",city:"Durban",province:"KwaZulu-Natal",
     bio:"Educational therapists specialising in learning differences.",tags:["OT","ADHD","Dyslexia","Learning Support"],
-    ageGroups:["5–7","8–10","11–13"],startingPrice:"R650/session",
-    phone:"+27 31 000 3333",contactEmail:"bookings@edutherapy.co.za",certifications:"HPCSA Registered",listingPlan:"featured",
-    reviews:{average:4.8,count:47,items:[{reviewer:"Lerato M.",rating:5,text:"Transformed our daughter's confidence."}]}
   },
   {
     id:"s4",name:"Future Leaders Academy",category:"school",location:"Online — National",
@@ -436,11 +330,8 @@ const SEED = [
     image:"https://images.unsplash.com/photo-1529390079861-591de3547d13?w=600&auto=format&fit=crop&q=75",
     priceFrom:"Custom quote",badge:"new",rating:4.7,reviewCount:18,tier:"pro",
     registered:"2025-01-16T11:00:00Z",status:"approved",
-    primaryCategory:"Online / Hybrid School",city:"Online",province:"Gauteng",deliveryMode:"Online",
+    primaryCategory:"Online / Hybrid School",city:"Online",province:"Gauteng",
     bio:"A fully accredited online school.",tags:["Online School","Live Classes","National","Accredited"],
-    ageGroups:["8–10","11–13","14–18"],startingPrice:"Contact for quote",
-    phone:"+27 10 000 4444",contactEmail:"enrol@futureleaders.co.za",certifications:"Umalusi Registered",listingPlan:"pro",
-    reviews:{average:4.7,count:18,items:[{reviewer:"Sipho K.",rating:5,text:"Our kids thrive in the structure."}]}
   },
   {
     id:"khan",name:"Khan Academy SA",category:"curriculum",location:"Johannesburg, Gauteng",
@@ -448,12 +339,8 @@ const SEED = [
     image:"https://images.unsplash.com/photo-1501504905252-473c47e087f8?w=600&auto=format&fit=crop&q=75",
     priceFrom:"Free",badge:"featured",rating:4.9,reviewCount:156,tier:"featured",
     registered:"2025-01-01T00:00:00Z",status:"approved",
-    primaryCategory:"Curriculum Provider",city:"Johannesburg",province:"Gauteng",deliveryMode:"Online",
+    primaryCategory:"Curriculum Provider",city:"Johannesburg",province:"Gauteng",
     bio:"Free world-class education for anyone.",tags:["Mathematics","Science","Online Learning","Free"],
-    ageGroups:["5–7","8–10","11–13","14–18"],startingPrice:"Free",
-    phone:"+27 11 555 1234",contactEmail:"support@khanacademy.org.za",email:"contact@khanacademy.org.za",
-    certifications:"Khan Academy Certified",listingPlan:"featured",
-    reviews:{average:4.9,count:156,items:[{reviewer:"Sarah J.",rating:5,text:"Excellent resource for homeschool."}]}
   },
 ];
 
@@ -504,7 +391,7 @@ const PLANS = [
   },
 ];
 
-/* ─── GET ALL PROVIDERS — featured slots FIRST (restored from old code) ─────── */
+/* ─── GET ALL PROVIDERS ─────────────────────────────────────────────────────── */
 function getAll() {
   try {
     const stored = JSON.parse(localStorage.getItem("sah_providers") || "[]");
@@ -516,11 +403,10 @@ function getAll() {
     const slotNames = getFeaturedSlotProviderNames();
     const slotIdSet = new Set(slotIds.map(s => s.id));
 
-    const marked = all.map(p => {
-      const inSlotById   = slotIdSet.has(p.id);
-      const inSlotByName = slotNames.includes(p.name);
-      return { ...p, _inFeaturedSlot: inSlotById || inSlotByName };
-    });
+    const marked = all.map(p => ({
+      ...p,
+      _inFeaturedSlot: slotIdSet.has(p.id) || slotNames.includes(p.name),
+    }));
 
     return marked.sort((a, b) => {
       if (a._inFeaturedSlot && !b._inFeaturedSlot) return -1;
@@ -531,13 +417,6 @@ function getAll() {
       return new Date(b.registered) - new Date(a.registered);
     });
   } catch { return SEED; }
-}
-
-function buildFeaturedRow(sorted) {
-  const slotProviders  = sorted.filter(p => p._inFeaturedSlot);
-  const otherProviders = sorted.filter(p => !p._inFeaturedSlot);
-  const needed = Math.max(0, FEATURED_SLOT_COUNT - slotProviders.length);
-  return [...slotProviders, ...otherProviders.slice(0, needed)].slice(0, FEATURED_SLOT_COUNT);
 }
 
 function starsStr(r) { return "★".repeat(Math.floor(r)) + (r % 1 >= 0.5 ? "½" : ""); }
@@ -623,10 +502,7 @@ function PlanCard({ plan, openId, onToggle, allOpen }) {
             <ul className="sah-plan-features">
               {plan.features.map((f, i) => (
                 <li key={i} className={f.yes ? "" : "no"}>
-                  {f.yes
-                    ? <i className="fas fa-check sah-ico-yes" />
-                    : <i className="fas fa-times sah-ico-no" />
-                  }
+                  {f.yes ? <i className="fas fa-check sah-ico-yes" /> : <i className="fas fa-times sah-ico-no" />}
                   {f.text}
                 </li>
               ))}
@@ -655,13 +531,11 @@ export default function HomePage() {
   const [showAllProviders, setShowAllProviders] = useState(false);
   const [openPlanId, setOpenPlanId]     = useState(null);
   const [allPlansOpen, setAllPlansOpen] = useState(false);
-  // ── Restored from old code: toggle controls visibility of the plans accordion
   const [plansVisible, setPlansVisible] = useState(false);
   const [regModal, setRegModal]         = useState(false);
   const [nlEmail, setNlEmail]           = useState("");
   const [nlMsg, setNlMsg]               = useState({ text:"", type:"" });
   const [toast, setToast]               = useState({ show:false, msg:"", err:false });
-  // ── Restored from old code: count providers in featured slots for banner
   const [featuredSlotCount, setFeaturedSlotCount] = useState(0);
 
   useEffect(() => {
@@ -673,7 +547,6 @@ export default function HomePage() {
     }
   }, []);
 
-  // Check login state & pre-fill email from registration redirect
   useEffect(() => {
     const h = (e) => { if (e.key === "Escape") setRegModal(false); };
     window.addEventListener("keydown", h);
@@ -691,22 +564,14 @@ export default function HomePage() {
     setTimeout(() => setToast(t => ({ ...t, show:false })), 3500);
   }, []);
 
-  /* Logout handler - completely clear user session */
-  const handleLogout = useCallback(() => {
-    clearCurrentUser();
-    setCurrentUser(null);
-    showToast("You've been logged out.");
-  }, [showToast]);
-
-  /* Login-wall gate for "View Profile" */
-  const viewProfile = id => {
-    if (!isLoggedIn()) { setLoginWallModal(true); return; }
+  // Single viewProfile declaration — navigates to the profile page
+  const viewProfile = (id) => {
     navigate("/profile?id=" + id);
   };
 
   const handleSearch = () => {
     const term = searchTerm.trim().toLowerCase();
-    let list = getAllProviders();
+    let list = getAll();
     if (searchCat) list = list.filter(p => p.category === searchCat);
     if (term) list = list.filter(p =>
       p.name.toLowerCase().includes(term) ||
@@ -731,8 +596,6 @@ export default function HomePage() {
     setOpenPlanId(prev => prev === id ? null : id);
   };
 
-  /* ── Restored from old code: toggle accordion open/closed,
-     expand all plan cards when opening, scroll to anchor           */
   const handleBecomeProvider = (e) => {
     if (e) e.preventDefault();
     const next = !plansVisible;
@@ -745,8 +608,6 @@ export default function HomePage() {
     }
   };
 
-  const viewProfile = (id) => { navigate("/profile?id=" + id); };
-
   const handleNewsletter = () => {
     const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(nlEmail.trim());
     if (!nlEmail.trim() || !valid) {
@@ -758,13 +619,13 @@ export default function HomePage() {
   };
 
   const FILTER_PILLS = [
-    { cat:"all",           label:"All Services" },
-    { cat:"tutor",         label:"Tutors",        icon:"fa-chalkboard-teacher" },
-    { cat:"therapist",     label:"Therapists",    icon:"fa-heart" },
-    { cat:"curriculum",    label:"Curriculum",    icon:"fa-book-open" },
-    { cat:"school",        label:"Online Schools",icon:"fa-school" },
-    { cat:"consultant",    label:"Consultants",   icon:"fa-user-tie" },
-    { cat:"extracurricular",label:"Enrichment",   icon:"fa-palette" },
+    { cat:"all",            label:"All Services" },
+    { cat:"tutor",          label:"Tutors",        icon:"fa-chalkboard-teacher" },
+    { cat:"therapist",      label:"Therapists",    icon:"fa-heart" },
+    { cat:"curriculum",     label:"Curriculum",    icon:"fa-book-open" },
+    { cat:"school",         label:"Online Schools",icon:"fa-school" },
+    { cat:"consultant",     label:"Consultants",   icon:"fa-user-tie" },
+    { cat:"extracurricular",label:"Enrichment",    icon:"fa-palette" },
   ];
 
   const displayedProviders = showAllProviders ? providers : providers.slice(0, 4);
@@ -790,8 +651,6 @@ export default function HomePage() {
               Magazine <i className="fas fa-arrow-up-right-from-square" style={{ fontSize:"0.65rem" }} />
             </a>
           </nav>
-
-          {/* ── NAV CTAs: logged-out vs logged-in ── */}
           <div className="sah-nav-ctas">
             <button className="sah-btn-ghost-nav" onClick={() => navigate('/login')}>Log In</button>
             <button className="sah-btn-solid-nav" onClick={() => setRegModal(true)}>Register</button>
@@ -809,7 +668,6 @@ export default function HomePage() {
                 Find the Right <em>Support</em><br />for Your Child's Education
               </h1>
 
-              {/* SEARCH BAR */}
               <div className="sah-hero-search">
                 <div className="sah-hs-icon"><i className="fas fa-search" /></div>
                 <input
@@ -832,31 +690,27 @@ export default function HomePage() {
                 <button className="sah-hs-btn" onClick={handleSearch}>Search</button>
               </div>
 
-              {/* ── HERO TAGLINE — Playfair Display font restored from old code ── */}
               <div className="sah-hero-tagline">
                 <h2>Are You a Homeschooling Service Provider?</h2>
                 <p>
                   Reach thousands of South African homeschooling families. List your services
                   on our dedicated directory — free to start.
                 </p>
-                {/* ── BECOME PROVIDER BUTTON — full accordion toggle restored from old code ── */}
                 <button
                   className={`sah-become-btn${plansVisible ? " active" : ""}`}
                   onClick={handleBecomeProvider}
                 >
                   <i className="fas fa-store" />
                   Become a Service Provider
-                  <i className={`fas fa-chevron-down sah-chev`} />
+                  <i className="fas fa-chevron-down sah-chev" />
                 </button>
               </div>
             </div>
 
-            {/* ── PLANS ACCORDION — grid-template-rows slide from old code ── */}
             <div id="sah-plans-anchor" />
             <div className={`sah-hero-plans-wrap${plansVisible ? " open" : ""}`}>
               <div className="sah-hero-plans-inner">
                 <div className="sah-hero-plans-grid-outer">
-                  {/* Featured slot banner — restored from old code */}
                   {featuredSlotCount > 0 && (
                     <div className="sah-featured-banner">
                       <i className="fas fa-star" />
@@ -877,7 +731,6 @@ export default function HomePage() {
                 </div>
               </div>
             </div>
-
           </div>
         </div>
       </section>
@@ -977,12 +830,7 @@ export default function HomePage() {
               <p>South Africa's dedicated directory connecting homeschooling families with trusted tutors, therapists, curriculum providers and education specialists.</p>
               <div className="sah-footer-newsletter">
                 <div className="sah-footer-newsletter-row">
-                  <input
-                    type="email"
-                    value={nlEmail}
-                    onChange={e => setNlEmail(e.target.value)}
-                    placeholder="Your email address…"
-                  />
+                  <input type="email" value={nlEmail} onChange={e => setNlEmail(e.target.value)} placeholder="Your email address…" />
                   <button type="button" onClick={handleNewsletter}>Subscribe</button>
                 </div>
                 {nlMsg.text && <div className={`sah-nl-feedback ${nlMsg.type}`}>{nlMsg.text}</div>}
@@ -1047,7 +895,7 @@ export default function HomePage() {
         </div>
       </footer>
 
-      {/* REGISTER CHOOSER MODAL */}
+      {/* REGISTER MODAL */}
       <div
         className={`sah-modal-overlay${regModal ? " open" : ""}`}
         onClick={e => { if (e.target === e.currentTarget) setRegModal(false); }}
