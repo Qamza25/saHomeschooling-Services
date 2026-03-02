@@ -95,11 +95,6 @@ const CSS = `
   .sah-login-prompt { text-align: center; font-size: 0.86rem; color: var(--mid); margin-bottom: 10px; }
   .sah-login-prompt a { color: var(--accent); font-weight: 600; text-decoration: none; }
   .sah-login-prompt a:hover { text-decoration: underline; }
-  .sah-demo-box { background: #f5f1eb; border: 1px solid rgba(0,0,0,0.08); border-radius: var(--radius); padding: 11px 14px; margin-top: 10px; }
-  .sah-demo-box h4 { font-size: 0.75rem; font-weight: 700; color: var(--mid); display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
-  .sah-demo-box h4 i { color: var(--accent); }
-  .sah-demo-box p { font-size: 0.78rem; color: var(--muted); line-height: 1.65; }
-  .sah-demo-box code { background: rgba(0,0,0,0.07); border-radius: 3px; padding: 1px 5px; font-size: 0.76rem; color: var(--accent); }
   @media (max-width: 768px) { .sah-login-left { display: none; } .sah-login-right { padding: 24px 20px; } }
 `;
 
@@ -311,15 +306,6 @@ const Login = () => {
               <p className="sah-login-prompt">
                 New to the community? <Link to="/register">Create a free account</Link> — it's free
               </p>
-
-              <div className="sah-demo-box">
-                <h4><i className="fas fa-flask" /> Demo Credentials</h4>
-                <p>
-                  <strong>Admin:</strong> <code>admin@sahomeschooling.co.za</code> / <code>admin123</code><br />
-                  <strong>Provider:</strong> Use your registered email and password<br />
-                  <strong>Demo Provider:</strong> <code>contact@khanacademy.org.za</code> + any password (6+ chars)
-                </p>
-              </div>
             </div>
           </div>
         </div>
