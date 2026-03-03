@@ -7,18 +7,45 @@ const jwt     = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
 const prisma  = new PrismaClient();
 
+// JWT Configuration with better defaults and validation
+const JWT_SECRET = process.env.JWT_SECRET || '71822C577C1F2AEA3A88402A16719283BE6950EE4EDB1A9040CCF6FF94FDE4CB';
 
-const JWT_SECRET  = process.env.JWT_SECRET  || '71822C577C1F2AEA3A88402A16719283BE6950EE4EDB1A9040CCF6FF94FDE4CB';
-const JWT_EXPIRES = process.env.JWT_EXPIRES || '7d';
+// IMPORTANT: Always use a string for expiresIn, never a number without quotes
+// Valid formats: '7d', '24h', '604800' (as string), 604800 (as number - seconds)
+let JWT_EXPIRES = process.env.JWT_EXPIRES || '7d';
 
+// Validate that expiresIn is in the correct format
+// If it's a pure number without quotes in .env, it will come as string "7d" which is fine
+// If someone accidentally set it as just 7d without quotes, it would cause the error
+console.log(`[AUTH] JWT_EXPIRES configured as: "${JWT_EXPIRES}"`);
+
+// Ensure expiresIn is a valid value (either string with unit or number in seconds)
+function validateExpiresIn(expiresIn) {
+  // If it's already a number, use it directly (seconds)
+  if (!isNaN(expiresIn)) {
+    return parseInt(expiresIn, 10);
+  }
+  // If it's a string with valid format (e.g., '7d', '24h'), use it
+  if (typeof expiresIn === 'string' && /^\d+[dhmsw]?$/.test(expiresIn)) {
+    return expiresIn;
+  }
+  // Default fallback to 7 days
+  console.warn(`[AUTH] Invalid JWT_EXPIRES format: "${expiresIn}", using default "7d"`);
+  return '7d';
+}
+
+// Safe expiresIn value
+const SAFE_JWT_EXPIRES = validateExpiresIn(JWT_EXPIRES);
+
+function signToken(payload) {
+  // Log what we're using for debugging
+  console.log(`[AUTH] Signing token with expiresIn:`, SAFE_JWT_EXPIRES);
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: SAFE_JWT_EXPIRES });
+}
 
 const ADMIN_EMAIL    = (process.env.ADMIN_EMAIL    || 'admin@sahomeschooling.co.za').toLowerCase();
 const ADMIN_PASSWORD =  process.env.ADMIN_PASSWORD || 'AdminPass123!';
 const ADMIN_NAME     =  process.env.ADMIN_NAME     || 'SA Homeschooling Admin';
-
-function signToken(payload) {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES });
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  POST /api/auth/register
@@ -76,10 +103,6 @@ router.post('/login', async (req, res) => {
     const trimmedEmail = email.trim().toLowerCase();
 
     // ── Admin shortcut — checked BEFORE the database ─────────────────────────
-    // The admin account lives only in environment variables / this file.
-    // No database row is required. The JWT userId is set to the literal string
-    // 'admin' so that /api/auth/me can identify it without a DB lookup.
-    // ─────────────────────────────────────────────────────────────────────────
     if (trimmedEmail === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
       const token = signToken({ userId: 'admin', email: trimmedEmail, role: 'ADMIN' });
       console.log(`[AUTH] LOGIN (admin): ${trimmedEmail}`);
