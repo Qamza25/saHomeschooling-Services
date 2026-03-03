@@ -7,7 +7,8 @@ const jwt     = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
 const prisma  = new PrismaClient();
 
-const JWT_SECRET  = process.env.JWT_SECRET  || 'sah_secret_key_change_in_production';
+
+const JWT_SECRET  = process.env.JWT_SECRET  || '71822C577C1F2AEA3A88402A16719283BE6950EE4EDB1A9040CCF6FF94FDE4CB';
 const JWT_EXPIRES = process.env.JWT_EXPIRES || '7d';
 
 
