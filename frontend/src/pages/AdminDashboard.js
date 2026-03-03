@@ -47,11 +47,11 @@ function saveFeaturedSlots(slots) {
 }
 const MAX_FEATURED_SLOTS = 4;
 
-/* ── Package pricing config ── */
+/* ── Package pricing config — must match Registration.js exactly ── */
 const PACKAGE_CONFIG = {
   community: { label: 'Community',         tier: 'free',     price: 0,    color: '#6b7280', bg: '#f9fafb', badge: 'community' },
-  trusted:   { label: 'Trusted Provider',  tier: 'pro',      price: 299,  color: '#1d4ed8', bg: '#eff6ff', badge: 'pro'       },
-  deluxe:    { label: 'Deluxe Provider',   tier: 'featured', price: 599,  color: '#d97706', bg: '#fffbeb', badge: 'featured'  },
+  trusted:   { label: 'Trusted Provider',  tier: 'pro',      price: 149,  color: '#1d4ed8', bg: '#eff6ff', badge: 'pro'       },
+  deluxe:    { label: 'Deluxe Provider',   tier: 'featured', price: 399,  color: '#d97706', bg: '#fffbeb', badge: 'featured'  },
 };
 
 /* ── Date helpers ── */
@@ -76,6 +76,38 @@ function isThisYear(dateStr) {
   if (!dateStr) return false;
   try { return new Date(dateStr).getFullYear() === now.getFullYear(); }
   catch { return false; }
+}
+
+/* ── Helper: resolve package key from provider ── */
+function resolvePackageKey(provider) {
+  const tier = (provider.tier || provider.listingPlan || 'free').toLowerCase();
+  if (tier === 'featured' || tier === 'deluxe') return 'deluxe';
+  if (tier === 'pro' || tier === 'trusted')     return 'trusted';
+  return 'community';
+}
+
+/* ── Helper: get all cert files for a provider (new array + legacy fallback) ── */
+function getCertFiles(provider) {
+  if (provider.certFilesAll && provider.certFilesAll.length > 0) {
+    return provider.certFilesAll;
+  }
+  // Legacy flat field fallback
+  if (provider.certFile) {
+    return [{ name: provider.certFileName || 'Certificate', type: provider.certFileType || 'application/pdf', data: provider.certFile }];
+  }
+  return [];
+}
+
+/* ── Helper: get all clearance files for a provider (new array + legacy fallback) ── */
+function getClearanceFiles(provider) {
+  if (provider.clearanceFilesAll && provider.clearanceFilesAll.length > 0) {
+    return provider.clearanceFilesAll;
+  }
+  // Legacy flat field fallback
+  if (provider.clearanceFile) {
+    return [{ name: provider.clearanceFileName || 'Police Clearance', type: provider.clearanceFileType || 'application/pdf', data: provider.clearanceFile }];
+  }
+  return [];
 }
 
 /* ── Inline CSS ─────────────────────────────────────────── */
@@ -230,6 +262,18 @@ const ADMIN_CSS = `
   .adm-photo-big { width:80px; height:80px; border-radius:50%; object-fit:cover; border:3px solid #c9621a; display:block; margin:0 auto 8px; box-shadow:0 3px 12px rgba(201,98,26,0.3); }
   .adm-photo-placeholder { width:80px; height:80px; border-radius:50%; background:linear-gradient(135deg,#c9621a,#e07a35); display:flex; align-items:center; justify-content:center; color:#fff; font-size:1.8rem; font-weight:800; margin:0 auto 8px; }
 
+  /* ── Multi-doc list ── */
+  .adm-doc-list { display:flex; flex-direction:column; gap:8px; }
+  .adm-doc-list-item { display:flex; align-items:center; gap:10px; padding:8px 10px; border:1.5px solid #e5e0d8; border-radius:8px; background:#fff; }
+  .adm-doc-list-icon { width:28px; height:28px; border-radius:6px; background:#fff3e8; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .adm-doc-list-icon i { color:#c9621a; font-size:0.78rem; }
+  .adm-doc-list-info { flex:1; min-width:0; }
+  .adm-doc-list-name { font-size:0.76rem; font-weight:700; color:#1a1a1a; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .adm-doc-list-sub { font-size:0.67rem; color:#aaa; margin-top:1px; }
+  .adm-doc-list-dl { padding:4px 9px; border-radius:5px; background:#c9621a; color:#fff; font-size:0.68rem; font-weight:700; border:none; cursor:pointer; font-family:inherit; transition:background 0.14s; flex-shrink:0; }
+  .adm-doc-list-dl:hover { background:#a84e12; }
+  .adm-doc-none { padding:12px; text-align:center; color:#bbb; font-size:0.76rem; font-style:italic; }
+
   /* ── Listings ── */
   .adm-listing-row { display:flex; align-items:center; gap:14px; padding:13px 18px; border:1px solid #e5e0d8; border-radius:10px; background:#fff; margin-bottom:10px; box-shadow:0 1px 4px rgba(0,0,0,0.04); transition:box-shadow 0.15s, border-color 0.15s; }
   .adm-listing-row:hover { box-shadow:0 3px 10px rgba(0,0,0,0.08); border-color:#c9621a; }
@@ -330,9 +374,9 @@ const ADMIN_CSS = `
   .adm-float-doc-icon { width: 30px; height: 30px; border-radius: 7px; background: #fff3e8; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .adm-float-doc-icon i { color: #c9621a; font-size: 0.8rem; }
   .adm-float-doc-info { flex: 1; min-width: 0; }
-  .adm-float-doc-name { font-size: 0.78rem; font-weight: 700; color: #1a1a1a; }
+  .adm-float-doc-name { font-size: 0.78rem; font-weight: 700; color: #1a1a1a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .adm-float-doc-sub { font-size: 0.68rem; color: #aaa; }
-  .adm-float-doc-dl { padding: 5px 10px; border-radius: 5px; background: #c9621a; color: #fff; font-size: 0.7rem; font-weight: 700; border: none; cursor: pointer; font-family: inherit; transition: background 0.14s; }
+  .adm-float-doc-dl { padding: 5px 10px; border-radius: 5px; background: #c9621a; color: #fff; font-size: 0.7rem; font-weight: 700; border: none; cursor: pointer; font-family: inherit; transition: background 0.14s; flex-shrink: 0; }
   .adm-float-doc-dl:hover { background: #a84e12; }
   .adm-float-footer {
     padding: 14px 20px; background: #faf9f7; border-top: 1px solid #f0ece5;
@@ -456,13 +500,63 @@ const ADMIN_CSS = `
   @media (max-width:600px) { .adm-featured-slots-grid { grid-template-columns:1fr; } .adm-detail-grid { grid-template-columns:1fr; } .adm-row-actions { flex-wrap:wrap; } .adm-file-grid { grid-template-columns:1fr; } .modal-file-grid { grid-template-columns:1fr; } .adm-revenue-summary { grid-template-columns:1fr; } .adm-float-card { width:100%; } }
 `;
 
+/* ── Reusable multi-file document list ── */
+const DocFileList = ({ files, emptyLabel }) => {
+  const downloadFile = (fileData, fileName) => {
+    if (!fileData) return;
+    const a = document.createElement('a');
+    a.href = fileData;
+    a.download = fileName || 'document';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  if (!files || files.length === 0) {
+    return <div className="adm-doc-none">{emptyLabel || 'Not uploaded'}</div>;
+  }
+
+  return (
+    <div className="adm-doc-list">
+      {files.map((f, i) => {
+        const isImage = f.type && f.type.startsWith('image/');
+        const isPdf   = f.type === 'application/pdf';
+        const icon    = isImage ? 'fa-image' : isPdf ? 'fa-file-pdf' : 'fa-file-alt';
+        const sizeKb  = f.size ? `${Math.round(f.size / 1024)} KB` : '';
+        return (
+          <div key={i} className="adm-doc-list-item">
+            <div className="adm-doc-list-icon">
+              <i className={`fas ${icon}`}></i>
+            </div>
+            <div className="adm-doc-list-info">
+              <div className="adm-doc-list-name">{f.name || `Document ${i + 1}`}</div>
+              <div className="adm-doc-list-sub">
+                {isPdf ? 'PDF document' : isImage ? 'Image file' : 'Document'}
+                {sizeKb && ` · ${sizeKb}`}
+              </div>
+            </div>
+            {f.data ? (
+              <button className="adm-doc-list-dl" onClick={() => downloadFile(f.data, f.name)}>
+                <i className="fas fa-download"></i> Download
+              </button>
+            ) : (
+              <span style={{ fontSize: '0.68rem', color: '#bbb', flexShrink: 0 }}>No data</span>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 /* ── File card used in admin detail panel ── */
 const AdminFileCard = ({ file, fileName, fileType, label }) => {
   const isImage = fileType && fileType.startsWith('image/');
   const isPdf   = fileType === 'application/pdf';
   const download = () => {
     if (!file) return;
-    const a = document.createElement('a'); a.href = file; a.download = fileName || label; a.click();
+    const a = document.createElement('a'); a.href = file; a.download = fileName || label;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
   };
   return (
     <div className="adm-file-card">
@@ -500,6 +594,8 @@ const ExpandablePendingRow = ({ provider, onApprove, onReject }) => {
   const val     = (v) => (v ? String(v) : null);
 
   const profilePhotoSrc = provider.profilePhoto || provider.photo || provider.image || null;
+  const certFiles       = getCertFiles(provider);
+  const clearanceFiles  = getClearanceFiles(provider);
 
   return (
     <div className={`adm-expand-row ${expanded ? 'expanded' : ''}`}>
@@ -515,8 +611,8 @@ const ExpandablePendingRow = ({ provider, onApprove, onReject }) => {
             <span className="adm-badge pending">Pending</span>
             {provider.tier === 'featured' && <span className="adm-badge featured"><i className="fas fa-crown"></i> Featured Plan</span>}
             {provider.tier === 'pro'      && <span className="adm-badge pro"><i className="fas fa-check-circle"></i> Pro Plan</span>}
-            {provider.certFile      && <span style={{ fontSize: '0.66rem', fontWeight: 700, padding: '2px 7px', borderRadius: 4, background: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0' }}><i className="fas fa-file-alt" style={{ marginRight: 3 }}></i>Cert</span>}
-            {provider.clearanceFile && <span style={{ fontSize: '0.66rem', fontWeight: 700, padding: '2px 7px', borderRadius: 4, background: '#eff6ff', color: '#1e40af', border: '1px solid #bfdbfe' }}><i className="fas fa-shield-alt" style={{ marginRight: 3 }}></i>Clearance</span>}
+            {certFiles.length > 0      && <span style={{ fontSize: '0.66rem', fontWeight: 700, padding: '2px 7px', borderRadius: 4, background: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0' }}><i className="fas fa-file-alt" style={{ marginRight: 3 }}></i>Cert ({certFiles.length})</span>}
+            {clearanceFiles.length > 0 && <span style={{ fontSize: '0.66rem', fontWeight: 700, padding: '2px 7px', borderRadius: 4, background: '#eff6ff', color: '#1e40af', border: '1px solid #bfdbfe' }}><i className="fas fa-shield-alt" style={{ marginRight: 3 }}></i>Clearance ({clearanceFiles.length})</span>}
           </div>
           <div className="adm-row-meta">
             {provider.email} &nbsp;·&nbsp; {provider.city || '—'}, {provider.province || '—'} &nbsp;·&nbsp;
@@ -626,34 +722,62 @@ const ExpandablePendingRow = ({ provider, onApprove, onReject }) => {
             </div>
           </div>
 
+          {/* ── Documents section — multi-file aware ── */}
           <div className="adm-file-section">
             <div className="adm-file-section-title">
               <i className="fas fa-paperclip"></i> Uploaded Files &amp; Documents
             </div>
-            <div className="adm-file-grid">
+
+            {/* Profile photo row */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#c9621a', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <i className="fas fa-camera"></i> Profile Photo
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                {profilePhotoSrc ? (
+                  <>
+                    <img src={profilePhotoSrc} alt="Profile" className="adm-photo-big" style={{ margin: 0 }} />
+                    <button className="adm-file-dl" onClick={() => {
+                      const a = document.createElement('a'); a.href = profilePhotoSrc;
+                      a.download = `${provider.name || 'profile'}-photo`;
+                      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                    }}>
+                      <i className="fas fa-download"></i> Download Photo
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div className="adm-photo-placeholder" style={{ width: 48, height: 48, fontSize: '1.1rem' }}>{initial}</div>
+                    <span className="adm-file-none" style={{ padding: 0 }}>No photo uploaded</span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Cert & Clearance as two columns */}
+            <div className="adm-file-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
               <div className="adm-file-card">
                 <div className="adm-file-card-head">
-                  <i className="fas fa-camera"></i>
-                  <span className="adm-file-card-name">Profile Photo</span>
+                  <i className="fas fa-file-alt"></i>
+                  <span className="adm-file-card-name">
+                    Qualification / Certificates ({certFiles.length})
+                  </span>
                 </div>
-                <div className="adm-file-card-body" style={{ textAlign: 'center', paddingTop: 12 }}>
-                  {profilePhotoSrc ? (
-                    <>
-                      <img src={profilePhotoSrc} alt="Profile" className="adm-photo-big" />
-                      <button className="adm-file-dl" onClick={() => { const a = document.createElement('a'); a.href = profilePhotoSrc; a.download = `${provider.name || 'profile'}-photo`; a.click(); }}>
-                        <i className="fas fa-download"></i> Download
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <div className="adm-photo-placeholder">{initial}</div>
-                      <div className="adm-file-none" style={{ padding: '4px 0' }}>No photo uploaded</div>
-                    </>
-                  )}
+                <div className="adm-file-card-body">
+                  <DocFileList files={certFiles} emptyLabel="No certificates uploaded" />
                 </div>
               </div>
-              <AdminFileCard file={provider.certFile} fileName={provider.certFileName} fileType={provider.certFileType} label="Qualification / Cert" />
-              <AdminFileCard file={provider.clearanceFile} fileName={provider.clearanceFileName} fileType={provider.clearanceFileType} label="Police Clearance" />
+              <div className="adm-file-card">
+                <div className="adm-file-card-head">
+                  <i className="fas fa-shield-alt"></i>
+                  <span className="adm-file-card-name">
+                    Police Clearance ({clearanceFiles.length})
+                  </span>
+                </div>
+                <div className="adm-file-card-body">
+                  <DocFileList files={clearanceFiles} emptyLabel="No clearance uploaded" />
+                </div>
+              </div>
             </div>
           </div>
 
@@ -723,9 +847,13 @@ const FloatingProfileCard = ({ provider, featuredSlots, onApprove, onReject, onC
   const profilePhotoSrc = provider.profilePhoto || provider.photo || provider.image || null;
   const regDate = provider.registered ? new Date(provider.registered).toLocaleDateString('en-ZA') : '—';
 
+  const certFiles      = getCertFiles(provider);
+  const clearanceFiles = getClearanceFiles(provider);
+
   const downloadFile = (file, name) => {
     if (!file) return;
-    const a = document.createElement('a'); a.href = file; a.download = name || 'file'; a.click();
+    const a = document.createElement('a'); a.href = file; a.download = name || 'file';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
   };
 
   // Close on Escape key
@@ -734,9 +862,6 @@ const FloatingProfileCard = ({ provider, featuredSlots, onApprove, onReject, onC
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, [onClose]);
-
-  const isCertImage  = provider.certFileType && provider.certFileType.startsWith('image/');
-  const isClearImage = provider.clearanceFileType && provider.clearanceFileType.startsWith('image/');
 
   return (
     <div className="adm-floating-overlay" onClick={onClose}>
@@ -861,37 +986,87 @@ const FloatingProfileCard = ({ provider, featuredSlots, onApprove, onReject, onC
             ))}
           </div>
 
-          {/* Documents */}
+          {/* Documents — multi-file aware */}
           <div className="adm-float-section">
             <div className="adm-float-section-title"><i className="fas fa-paperclip"></i> Documents</div>
-            {/* Cert */}
-            <div className="adm-float-doc-row">
-              <div className="adm-float-doc-icon">
-                <i className={`fas ${provider.certFile ? (isCertImage ? 'fa-image' : 'fa-file-alt') : 'fa-file-alt'}`}></i>
+
+            {/* Certificates */}
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: '0.63rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#bbb', marginBottom: 6 }}>
+                Qualification / Certificates ({certFiles.length})
               </div>
-              <div className="adm-float-doc-info">
-                <div className="adm-float-doc-name">Qualification / Certificate</div>
-                <div className="adm-float-doc-sub">{provider.certFileName || (provider.certFile ? 'On file' : 'Not uploaded')}</div>
-              </div>
-              {provider.certFile && (
-                <button className="adm-float-doc-dl" onClick={() => downloadFile(provider.certFile, provider.certFileName || 'certificate')}>
-                  <i className="fas fa-download"></i>
-                </button>
+              {certFiles.length === 0 ? (
+                <div className="adm-float-doc-row">
+                  <div className="adm-float-doc-icon"><i className="fas fa-file-alt"></i></div>
+                  <div className="adm-float-doc-info">
+                    <div className="adm-float-doc-name">No certificates uploaded</div>
+                    <div className="adm-float-doc-sub">—</div>
+                  </div>
+                </div>
+              ) : (
+                certFiles.map((f, i) => {
+                  const isImage = f.type && f.type.startsWith('image/');
+                  const isPdf   = f.type === 'application/pdf';
+                  return (
+                    <div key={i} className="adm-float-doc-row">
+                      <div className="adm-float-doc-icon">
+                        <i className={`fas ${isImage ? 'fa-image' : isPdf ? 'fa-file-pdf' : 'fa-file-alt'}`}></i>
+                      </div>
+                      <div className="adm-float-doc-info">
+                        <div className="adm-float-doc-name">{f.name || `Certificate ${i + 1}`}</div>
+                        <div className="adm-float-doc-sub">
+                          {isPdf ? 'PDF' : isImage ? 'Image' : 'Document'}
+                          {f.size ? ` · ${Math.round(f.size / 1024)} KB` : ''}
+                        </div>
+                      </div>
+                      {f.data && (
+                        <button className="adm-float-doc-dl" onClick={() => downloadFile(f.data, f.name)}>
+                          <i className="fas fa-download"></i>
+                        </button>
+                      )}
+                    </div>
+                  );
+                })
               )}
             </div>
-            {/* Clearance */}
-            <div className="adm-float-doc-row">
-              <div className="adm-float-doc-icon">
-                <i className={`fas ${provider.clearanceFile ? (isClearImage ? 'fa-image' : 'fa-file-pdf') : 'fa-shield-alt'}`}></i>
+
+            {/* Police Clearance */}
+            <div>
+              <div style={{ fontSize: '0.63rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#bbb', marginBottom: 6 }}>
+                Police Clearance ({clearanceFiles.length})
               </div>
-              <div className="adm-float-doc-info">
-                <div className="adm-float-doc-name">Police Clearance</div>
-                <div className="adm-float-doc-sub">{provider.clearanceFileName || (provider.clearanceFile ? 'On file' : 'Not uploaded')}</div>
-              </div>
-              {provider.clearanceFile && (
-                <button className="adm-float-doc-dl" onClick={() => downloadFile(provider.clearanceFile, provider.clearanceFileName || 'clearance')}>
-                  <i className="fas fa-download"></i>
-                </button>
+              {clearanceFiles.length === 0 ? (
+                <div className="adm-float-doc-row">
+                  <div className="adm-float-doc-icon"><i className="fas fa-shield-alt"></i></div>
+                  <div className="adm-float-doc-info">
+                    <div className="adm-float-doc-name">No clearance uploaded</div>
+                    <div className="adm-float-doc-sub">—</div>
+                  </div>
+                </div>
+              ) : (
+                clearanceFiles.map((f, i) => {
+                  const isImage = f.type && f.type.startsWith('image/');
+                  const isPdf   = f.type === 'application/pdf';
+                  return (
+                    <div key={i} className="adm-float-doc-row">
+                      <div className="adm-float-doc-icon">
+                        <i className={`fas ${isImage ? 'fa-image' : isPdf ? 'fa-file-pdf' : 'fa-shield-alt'}`}></i>
+                      </div>
+                      <div className="adm-float-doc-info">
+                        <div className="adm-float-doc-name">{f.name || `Clearance ${i + 1}`}</div>
+                        <div className="adm-float-doc-sub">
+                          {isPdf ? 'PDF' : isImage ? 'Image' : 'Document'}
+                          {f.size ? ` · ${Math.round(f.size / 1024)} KB` : ''}
+                        </div>
+                      </div>
+                      {f.data && (
+                        <button className="adm-float-doc-dl" onClick={() => downloadFile(f.data, f.name)}>
+                          <i className="fas fa-download"></i>
+                        </button>
+                      )}
+                    </div>
+                  );
+                })
               )}
             </div>
           </div>
@@ -914,14 +1089,6 @@ const FloatingProfileCard = ({ provider, featuredSlots, onApprove, onReject, onC
 };
 
 const EMPTY_MODAL = { title: '', body: '' };
-
-/* ── Helper: resolve package key from provider ── */
-function resolvePackageKey(provider) {
-  const tier = (provider.tier || provider.listingPlan || 'free').toLowerCase();
-  if (tier === 'featured' || tier === 'deluxe') return 'deluxe';
-  if (tier === 'pro' || tier === 'trusted')     return 'trusted';
-  return 'community';
-}
 
 /* ═══════════════════════════════════════════════════════════
    ADMIN DASHBOARD
@@ -1302,6 +1469,8 @@ const AdminDashboard = () => {
                     {filteredListings.map(provider => {
                       const photoSrc = provider.profilePhoto || provider.photo || provider.image || null;
                       const isSelected = floatingProvider?.id === provider.id;
+                      const provCertFiles      = getCertFiles(provider);
+                      const provClearanceFiles = getClearanceFiles(provider);
                       return (
                         <div
                           className={`adm-listing-row ${isSelected ? 'selected' : ''}`}
@@ -1320,8 +1489,8 @@ const AdminDashboard = () => {
                               {provider.demoted  && <span className="adm-badge" style={{ background: '#fee2e2', color: '#991b1b' }}>Demoted</span>}
                               {provider.tier === 'featured' && <span className="adm-badge featured"><i className="fas fa-crown"></i> featured</span>}
                               {provider.tier === 'pro'      && <span className="adm-badge pro"><i className="fas fa-check-circle"></i> trusted</span>}
-                              {provider.certFile      && <span style={{ fontSize: '0.65rem', padding: '2px 6px', borderRadius: 3, background: '#ecfdf5', color: '#065f46', fontWeight: 700 }}><i className="fas fa-file-alt" style={{ marginRight: 2 }}></i>Cert</span>}
-                              {provider.clearanceFile && <span style={{ fontSize: '0.65rem', padding: '2px 6px', borderRadius: 3, background: '#eff6ff', color: '#1e40af', fontWeight: 700 }}><i className="fas fa-shield-alt" style={{ marginRight: 2 }}></i>Clearance</span>}
+                              {provCertFiles.length > 0      && <span style={{ fontSize: '0.65rem', padding: '2px 6px', borderRadius: 3, background: '#ecfdf5', color: '#065f46', fontWeight: 700 }}><i className="fas fa-file-alt" style={{ marginRight: 2 }}></i>Cert ({provCertFiles.length})</span>}
+                              {provClearanceFiles.length > 0 && <span style={{ fontSize: '0.65rem', padding: '2px 6px', borderRadius: 3, background: '#eff6ff', color: '#1e40af', fontWeight: 700 }}><i className="fas fa-shield-alt" style={{ marginRight: 2 }}></i>Clearance ({provClearanceFiles.length})</span>}
                               {featuredSlots.some(s => s.providerId === provider.id) && (
                                 <span style={{ fontSize: '0.68rem', fontWeight: 700, padding: '2px 8px', borderRadius: 4, background: '#fde68a', color: '#92400e' }}>
                                   <i className="fas fa-star" style={{ marginRight: 3 }}></i>Slot #{featuredSlots.find(s => s.providerId === provider.id)?.id}

@@ -62,7 +62,7 @@ function mapDbProfileToLocal(db) {
     degrees:              db.degrees        || '',
     certifications:       db.certifications || '',
     memberships:          db.memberships    || '',
-    clearance:            db.clearance      || '',
+    clearance:            db.clearance      || db.clearanceText || '',
     // service (DB stores flat; UI wraps in array)
     serviceTitle:         db.serviceTitle   || '',
     serviceDesc:          db.serviceDesc    || '',
@@ -107,15 +107,19 @@ function mapDbProfileToLocal(db) {
     image:            db.profilePhoto     || db.photo || db.image || null,
     photo:            db.profilePhoto     || db.photo || db.image || null,
     profilePhoto:     db.profilePhoto     || db.photo || db.image || null,
+    // ── KEY FIX: pass through full certFilesAll / clearanceFilesAll arrays ──
+    // These carry { name, type, size, data } objects where data is base64
+    certFilesAll:         db.certFilesAll         || [],
+    clearanceFilesAll:    db.clearanceFilesAll     || [],
+    // Legacy flat fields (first file only)
     certFile:         db.certFile         || null,
     certFileName:     db.certFileName     || null,
     certFileType:     db.certFileType     || null,
-    certFilesAll:     db.certFilesAll     || [],
-    certDocuments:    db.certDocuments    || [],
     clearanceFile:    db.clearanceFile    || null,
     clearanceFileName:db.clearanceFileName|| null,
     clearanceFileType:db.clearanceFileType|| null,
-    clearanceFilesAll:    db.clearanceFilesAll    || [],
+    // Filename-only fallback arrays (when no base64 available)
+    certDocuments:    db.certDocuments    || [],
     clearanceDocuments:   db.clearanceDocuments   || [],
     // status / plan
     plan:         db.listingPlan  || db.plan || db.tier || 'free',
@@ -151,8 +155,10 @@ const EMPTY_PROFILE = {
   publicToggle: true,
   plan: 'free', listingPublic: true, status: 'pending',
   image: null, photo: null, profilePhoto: null,
-  certFile: null, certFileName: null, certFileType: null, certFilesAll: [], certDocuments: [],
-  clearanceFile: null, clearanceFileName: null, clearanceFileType: null, clearanceFilesAll: [], clearanceDocuments: [],
+  certFile: null, certFileName: null, certFileType: null,
+  certFilesAll: [], certDocuments: [],
+  clearanceFile: null, clearanceFileName: null, clearanceFileType: null,
+  clearanceFilesAll: [], clearanceDocuments: [],
   reviews: { average: 0, count: 0, items: [] },
 };
 
@@ -309,11 +315,14 @@ const DASH_CSS = `
   .cd-doc-info { flex:1; min-width:0; }
   .cd-doc-name { font-size:0.78rem; font-weight:700; color:#1a1a1a; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .cd-doc-sub  { font-size:0.68rem; color:#aaa; margin-top:1px; }
-  .cd-doc-dl { padding:5px 11px; border-radius:5px; background:#c9621a; color:#fff; font-size:0.7rem; font-weight:700; border:none; cursor:pointer; font-family:inherit; transition:background .14px; flex-shrink:0; }
+  .cd-doc-dl { padding:5px 11px; border-radius:5px; background:#c9621a; color:#fff; font-size:0.7rem; font-weight:700; border:none; cursor:pointer; font-family:inherit; transition:background .15s; flex-shrink:0; display:inline-flex; align-items:center; gap:5px; }
   .cd-doc-dl:hover { background:#a84e12; }
   /* ── qual upload notice ── */
   .cd-qual-notice { display:flex; align-items:flex-start; gap:8px; padding:10px 13px; background:#f0f9ff; border-radius:7px; border:1px solid #bae6fd; font-size:0.77rem; color:#0369a1; margin-top:8px; }
   .cd-qual-notice i { color:#0284c7; margin-top:1px; flex-shrink:0; }
+  /* ── documents section header ── */
+  .cd-docs-section-title { font-size:0.67rem; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:#aaa; margin-bottom:6px; display:flex; align-items:center; gap:6px; }
+  .cd-docs-empty { font-size:0.8rem; color:#bbb; font-style:italic; padding:8px 0; }
   @media(max-width:1024px) { .cd-layout { grid-template-columns:1fr; } .cd-plan-grid { grid-template-columns:1fr; } }
   @media(max-width:768px)  { .cd-main { padding:16px 14px 48px; } .cd-hero-top { padding:0 16px 24px; } .cd-tab-bar { padding:0 14px; overflow-x:auto; flex-wrap:nowrap; } .cd-row { grid-template-columns:1fr; } .cd-svc-grid { grid-template-columns:1fr 1fr; } }
   @media(max-width:520px)  { .cd-svc-grid { grid-template-columns:1fr; } .cd-row-3 { grid-template-columns:1fr 1fr; } .cd-plan-grid { grid-template-columns:1fr; } }
@@ -373,7 +382,6 @@ const ClientDashboard = () => {
             const mapped = mapDbProfileToLocal(dbRow);
             setProfileData(mapped);
             setPhotoPreview(mapped.profilePhoto || null);
-            // keep localStorage in sync so offline fallback is fresh
             saveProviderById({ ...mapped, id: cu.id, userId: cu.id });
             setDataLoading(false);
             return;
@@ -433,13 +441,12 @@ const ClientDashboard = () => {
     setProfileData(prev => ({ ...prev, ...patch }));
   }, []);
 
-  /* ─── saveChanges — reads latest state then persists ─── */
+  /* ─── saveChanges ─── */
   const saveChanges = useCallback(() => {
     setLoading(true);
     setProfileData(currentData => {
       const toSave = { ...currentData, social: currentData.website || currentData.social || '' };
 
-      // 1. localStorage (always)
       try {
         const saved = saveProviderById(toSave);
         if (saved) {
@@ -448,7 +455,6 @@ const ClientDashboard = () => {
         }
       } catch (err) { console.error('Save error:', err); }
 
-      // 2. API sync (non-blocking)
       const token = localStorage.getItem('sah_token');
       if (token && currentData.userId && !String(token).startsWith('local_')) {
         const fd = new FormData();
@@ -491,7 +497,6 @@ const ClientDashboard = () => {
           publicDisplay:       currentData.publicToggle,
         }));
 
-        // Attach new PDF files if present
         if (currentData._newCertFile) fd.append('certFile', currentData._newCertFile);
         if (currentData._newClearanceFile) fd.append('clearanceFile', currentData._newClearanceFile);
 
@@ -530,39 +535,55 @@ const ClientDashboard = () => {
     reader.readAsDataURL(file);
   };
 
-  /* ─── qualification PDF upload (no auto-fill — file stored as-is for admin) ─── */
+  /* ─── qualification PDF upload ─── */
   const handleQualFileChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    // Enforce PDF only
     if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
       showNotification('Only PDF files are accepted for qualification documents.', 'error');
       if (qualFileInputRef.current) qualFileInputRef.current.value = '';
       return;
     }
-
     setQualFileName(file.name);
-    // Store the raw file object for API upload on save; do NOT auto-fill any text fields
-    upd({ _newCertFile: file, certFileName: file.name, certFileType: file.type });
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const b64 = ev.target.result;
+      const newEntry = { name: file.name, type: file.type || 'application/pdf', size: file.size, data: b64 };
+      upd({
+        _newCertFile: file,
+        certFileName: file.name,
+        certFileType: file.type,
+        certFile: b64,
+        certFilesAll: [...(profileData.certFilesAll || []), newEntry],
+      });
+    };
+    reader.readAsDataURL(file);
     showNotification('PDF attached. Click Save Changes to upload.', 'info');
   };
 
-  /* ─── clearance PDF upload (no auto-fill — file stored as-is for admin) ─── */
+  /* ─── clearance PDF upload ─── */
   const handleClearanceFileChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    // Enforce PDF only
     if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
       showNotification('Only PDF files are accepted for police clearance documents.', 'error');
       if (clearanceFileInputRef.current) clearanceFileInputRef.current.value = '';
       return;
     }
-
     setClearanceFileName(file.name);
-    // Store the raw file object for API upload on save; do NOT auto-fill any text fields
-    upd({ _newClearanceFile: file, clearanceFileName: file.name, clearanceFileType: file.type });
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const b64 = ev.target.result;
+      const newEntry = { name: file.name, type: file.type || 'application/pdf', size: file.size, data: b64 };
+      upd({
+        _newClearanceFile: file,
+        clearanceFileName: file.name,
+        clearanceFileType: file.type,
+        clearanceFile: b64,
+        clearanceFilesAll: [...(profileData.clearanceFilesAll || []), newEntry],
+      });
+    };
+    reader.readAsDataURL(file);
     showNotification('PDF attached. Click Save Changes to upload.', 'info');
   };
 
@@ -589,7 +610,12 @@ const ClientDashboard = () => {
   /* ─── file download ─── */
   const downloadFile = (dataUrl, fileName) => {
     if (!dataUrl) return;
-    const a = document.createElement('a'); a.href = dataUrl; a.download = fileName || 'document'; a.click();
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = fileName || 'document.pdf';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   /* ─── misc ─── */
@@ -620,28 +646,30 @@ const ClientDashboard = () => {
     </div>
   ) : null;
 
-  /* ── document card for PDF files ── */
-  // file = base64 data URL (or null), fileName = string, fileType = mime string
-  const renderDocCard = (file, fileName, fileType, label) => {
-    const displayName = fileName || label;
-    const isPdf = fileType === 'application/pdf' || (displayName || '').toLowerCase().endsWith('.pdf');
-    if (file) {
-      // We have the actual data — show download button
+  /* ── renderDocCard: single document card with download button ── */
+  const renderDocCard = (fileData, fileName, fileType, fallbackLabel) => {
+    const displayName = fileName || fallbackLabel;
+    const isPdf = (fileType || '').includes('pdf') || (displayName || '').toLowerCase().endsWith('.pdf');
+
+    if (fileData) {
       return (
         <div className="cd-doc-card">
-          <div className="cd-doc-icon"><i className={`fas ${isPdf ? 'fa-file-pdf' : 'fa-file-alt'}`}></i></div>
+          <div className="cd-doc-icon">
+            <i className={`fas ${isPdf ? 'fa-file-pdf' : 'fa-file-alt'}`}></i>
+          </div>
           <div className="cd-doc-info">
             <div className="cd-doc-name">{displayName}</div>
-            <div className="cd-doc-sub">{isPdf ? 'PDF document' : 'Document'}</div>
+            <div className="cd-doc-sub">{isPdf ? 'PDF document · click to download' : 'Document'}</div>
           </div>
-          <button className="cd-doc-dl" onClick={() => downloadFile(file, displayName)}>
+          <button className="cd-doc-dl" onClick={() => downloadFile(fileData, displayName)}>
             <i className="fas fa-download"></i> Download
           </button>
         </div>
       );
     }
-    if (displayName && displayName !== label) {
-      // We have the filename but no data (e.g. stored on server only) — show name badge
+
+    // Name only — no downloadable data
+    if (displayName && displayName !== fallbackLabel) {
       return (
         <div className="cd-doc-card">
           <div className="cd-doc-icon"><i className="fas fa-file-pdf"></i></div>
@@ -655,28 +683,28 @@ const ClientDashboard = () => {
         </div>
       );
     }
+
     return null;
   };
 
-  /* ── render all files from certFilesAll / clearanceFilesAll arrays ── */
+  /* ── renderAllDocCards: render from certFilesAll / clearanceFilesAll arrays ── */
   const renderAllDocCards = (filesAll, docNames, sectionLabel) => {
-    // filesAll = [{name, type, data}] stored from registration
-    // docNames = [string] filenames only (fallback when no base64)
     const cards = [];
+
+    // Primary: full objects with base64 data (set during registration)
     if (filesAll && filesAll.length > 0) {
-      filesAll.forEach((f, i) => cards.push(
-        <div key={`${sectionLabel}-all-${i}`}>
-          {renderDocCard(f.data, f.name, f.type, sectionLabel)}
-        </div>
-      ));
+      filesAll.forEach((f, i) => {
+        const card = renderDocCard(f.data || null, f.name, f.type, sectionLabel);
+        if (card) cards.push(<div key={`${sectionLabel}-${i}`}>{card}</div>);
+      });
     } else if (docNames && docNames.length > 0) {
-      // Fallback: only names available
-      docNames.forEach((name, i) => cards.push(
-        <div key={`${sectionLabel}-name-${i}`}>
-          {renderDocCard(null, name, 'application/pdf', sectionLabel)}
-        </div>
-      ));
+      // Fallback: filename strings only (no base64)
+      docNames.forEach((name, i) => {
+        const card = renderDocCard(null, name, 'application/pdf', sectionLabel);
+        if (card) cards.push(<div key={`${sectionLabel}-name-${i}`}>{card}</div>);
+      });
     }
+
     return cards;
   };
 
@@ -716,7 +744,6 @@ const ClientDashboard = () => {
           </div>
         </div>
       )}
-      {/* Languages sidebar mini-card */}
       {(profileData.languages || []).length > 0 && (
         <div className="cd-sidebar-card">
           <div className="cd-sidebar-header">
@@ -729,6 +756,30 @@ const ClientDashboard = () => {
           </div>
         </div>
       )}
+      {/* ── Sidebar: quick document access ── */}
+      {(() => {
+        const hasCert  = (profileData.certFilesAll?.length > 0) || (profileData.certDocuments?.length > 0) || !!profileData.certFile;
+        const hasClear = (profileData.clearanceFilesAll?.length > 0) || (profileData.clearanceDocuments?.length > 0) || !!profileData.clearanceFile;
+        if (!hasCert && !hasClear) return null;
+        return (
+          <div className="cd-sidebar-card">
+            <div className="cd-sidebar-header">
+              <div className="cd-sidebar-title"><i className="fas fa-file-pdf" style={{ marginRight: 6 }}></i>My Documents</div>
+            </div>
+            <div className="cd-sidebar-body">
+              <p style={{ fontSize: '0.74rem', color: '#888', marginBottom: 10 }}>
+                Documents you uploaded during registration. Go to <strong>Profile → Qualifications</strong> to view and download.
+              </p>
+              <button
+                style={{ width: '100%', padding: '8px 12px', background: '#c9621a', color: '#fff', border: 'none', borderRadius: 7, fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}
+                onClick={() => setActiveTab('profile')}
+              >
+                <i className="fas fa-folder-open"></i> View Documents
+              </button>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 
@@ -808,7 +859,6 @@ const ClientDashboard = () => {
                   </select>
                 : <div className={`cd-value ${!profileData.primaryCategory ? 'empty' : ''}`}>{profileData.primaryCategory || '—'}</div>}
             </div>
-            {/* Secondary categories — view only (set during registration) */}
             {(profileData.secondaryCategories || []).length > 0 && (
               <div className="cd-field">
                 <label className="cd-label">Secondary Categories</label>
@@ -832,7 +882,6 @@ const ClientDashboard = () => {
                       : <span className="cd-value empty" style={{ padding: 0 }}>No tags yet</span>}
                   </div>}
             </div>
-            {/* Languages (editable) */}
             <div className="cd-field">
               <label className="cd-label">Languages Spoken</label>
               {editing ? (
@@ -901,7 +950,7 @@ const ClientDashboard = () => {
               </div>
             </div>
 
-            {/* ── PDF Document Uploads (PDF only, no auto-fill) ── */}
+            {/* ── PDF uploads (edit mode) ── */}
             {editing && (
               <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid #f0ece5' }}>
                 <div className="cd-sec-label"><i className="fas fa-file-pdf"></i> Upload Supporting Documents (PDF only)</div>
@@ -909,8 +958,6 @@ const ClientDashboard = () => {
                   <i className="fas fa-info-circle"></i>
                   <span>Upload PDF documents only. These will be reviewed by the admin as-is and will not affect your text fields above.</span>
                 </div>
-
-                {/* Qualification PDF */}
                 <div className="cd-field">
                   <label className="cd-label"><i className="fas fa-certificate" style={{ marginRight: 5, color: '#c9621a' }}></i>Qualification / Certificate PDF</label>
                   <input
@@ -928,8 +975,6 @@ const ClientDashboard = () => {
                     </div>
                   )}
                 </div>
-
-                {/* Clearance PDF */}
                 <div className="cd-field" style={{ marginTop: 10 }}>
                   <label className="cd-label"><i className="fas fa-shield-alt" style={{ marginRight: 5, color: '#c9621a' }}></i>Police Clearance PDF</label>
                   <input
@@ -950,25 +995,42 @@ const ClientDashboard = () => {
               </div>
             )}
 
-            {/* ── Previously uploaded document files from registration ── */}
+            {/* ── Previously uploaded documents — always visible ── */}
             {(() => {
-              const hasCertDocs  = (profileData.certFilesAll?.length > 0)  || (profileData.certDocuments?.length > 0)  || !!profileData.certFile;
-              const hasClearDocs = (profileData.clearanceFilesAll?.length > 0) || (profileData.clearanceDocuments?.length > 0) || !!profileData.clearanceFile;
+              const certCards    = renderAllDocCards(profileData.certFilesAll, profileData.certDocuments, 'Qualification / Certificate');
+              const clearCards   = renderAllDocCards(profileData.clearanceFilesAll, profileData.clearanceDocuments, 'Police Clearance');
+              const hasCertDocs  = certCards.length > 0;
+              const hasClearDocs = clearCards.length > 0;
+
               if (!hasCertDocs && !hasClearDocs) return null;
+
               return (
                 <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid #f0ece5' }}>
-                  <div className="cd-sec-label"><i className="fas fa-paperclip"></i> Uploaded Documents</div>
+                  <div className="cd-sec-label">
+                    <i className="fas fa-paperclip"></i> Uploaded Documents
+                    <span style={{ marginLeft: 'auto', fontSize: '0.65rem', color: '#aaa', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>
+                      {(certCards.length + clearCards.length)} file{(certCards.length + clearCards.length) !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+
                   {hasCertDocs && (
-                    <>
-                      <div style={{ fontSize: '0.67rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.6px', color: '#aaa', marginBottom: 6 }}>Qualification / Certificate PDFs</div>
-                      {renderAllDocCards(profileData.certFilesAll, profileData.certDocuments, 'Qualification / Certificate')}
-                    </>
+                    <div style={{ marginBottom: hasClearDocs ? 14 : 0 }}>
+                      <div className="cd-docs-section-title">
+                        <i className="fas fa-certificate" style={{ color: '#c9621a' }}></i>
+                        Qualification / Certificate PDFs
+                      </div>
+                      {certCards}
+                    </div>
                   )}
+
                   {hasClearDocs && (
-                    <>
-                      <div style={{ fontSize: '0.67rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.6px', color: '#aaa', marginTop: hasCertDocs ? 10 : 0, marginBottom: 6 }}>Police Clearance PDFs</div>
-                      {renderAllDocCards(profileData.clearanceFilesAll, profileData.clearanceDocuments, 'Police Clearance')}
-                    </>
+                    <div>
+                      <div className="cd-docs-section-title">
+                        <i className="fas fa-shield-alt" style={{ color: '#059669' }}></i>
+                        Police Clearance PDFs
+                      </div>
+                      {clearCards}
+                    </div>
                   )}
                 </div>
               );
@@ -1408,7 +1470,6 @@ const ClientDashboard = () => {
 
   return (
     <div className="cd-wrap">
-      {/* ── Pass backPath so Header "Back to Directory" navigates to HomePage ── */}
       <Header userType="client" backPath="/" />
       <section className="cd-hero">
         <div className="cd-hero-top">

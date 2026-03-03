@@ -476,9 +476,7 @@ function getAll() {
     const allRaw = [...stored, ...SEED].filter(p => (p.status || "approved") === "approved");
     const seen = new Set();
     const all = allRaw.filter(p => { if (seen.has(p.id)) return false; seen.add(p.id); return true; });
-
     const marked = all.map(p => ({ ...p, _inFeaturedSlot: false }));
-
     return marked.sort((a, b) => {
       if (a._inFeaturedSlot && !b._inFeaturedSlot) return -1;
       if (!a._inFeaturedSlot && b._inFeaturedSlot)  return 1;
@@ -488,6 +486,32 @@ function getAll() {
       return new Date(b.registered) - new Date(a.registered);
     });
   } catch { return SEED; }
+}
+
+// ── Validate that a stored session is legitimate ───────────────────────────
+// A session is only valid if BOTH sah_current_user AND sah_token exist,
+// AND the token is not an admin shortcut token left from a previous session.
+function getValidSession() {
+  try {
+    const token = localStorage.getItem('sah_token');
+    const raw   = localStorage.getItem('sah_current_user');
+    if (!token || !raw) return null;
+
+    const user = JSON.parse(raw);
+    if (!user || !user.id) return null;
+
+    // If the stored user is admin but there's no matching valid token, clear it
+    if (user.role === 'admin' && token !== `admin_${user.id}`) {
+      localStorage.removeItem('sah_current_user');
+      localStorage.removeItem('sah_token');
+      localStorage.removeItem('sah_user');
+      return null;
+    }
+
+    return user;
+  } catch {
+    return null;
+  }
 }
 
 function starsStr(r) { return "★".repeat(Math.floor(r)) + (r % 1 >= 0.5 ? "½" : ""); }
@@ -590,7 +614,6 @@ function PlanCard({ plan, openId, onToggle, allOpen, onCtaClick }) {
   );
 }
 
-/* ─── LOGIN REQUIRED MODAL (only used for "View Profile") ────────────────── */
 function LoginRequiredModal({ open, onClose, onLogin, onRegister, message }) {
   return (
     <div
@@ -649,8 +672,7 @@ export default function HomePage() {
   const [nlEmail, setNlEmail]           = useState("");
   const [nlMsg, setNlMsg]               = useState({ text:"", type:"" });
   const [toast, setToast]               = useState({ show:false, msg:"", err:false });
-  const [currentUser, setCurrentUser]   = useState(null);
-  // Login-required modal — only shown when viewing a profile while logged out
+  const [currentUser, setCurrentUser]   = useState(null); // always null until verified
   const [loginModal, setLoginModal]     = useState({ open:false, message:"" });
 
   useEffect(() => {
@@ -661,13 +683,10 @@ export default function HomePage() {
       document.head.appendChild(s);
     }
 
+    // ── Only restore a session if a valid token + user exist ──────────────
     const checkUser = () => {
-      try {
-        const user = JSON.parse(localStorage.getItem('sah_current_user'));
-        setCurrentUser(user);
-      } catch {
-        setCurrentUser(null);
-      }
+      const user = getValidSession();
+      setCurrentUser(user); // null if no valid session
     };
 
     checkUser();
@@ -729,14 +748,10 @@ export default function HomePage() {
     }
   };
 
-  // ── PLAN CTA: always navigate to provider registration step 2 ──────────────
-  // No login check here — anyone can start the registration flow regardless of
-  // whether they are logged in or not.
   const handlePlanCtaClick = (planParam) => {
     navigate(`/register/provider?step=2&plan=${encodeURIComponent(planParam)}`);
   };
 
-  // ── VIEW PROFILE: requires login ───────────────────────────────────────────
   const viewProfile = (id) => {
     if (!currentUser) {
       setLoginModal({
@@ -748,7 +763,6 @@ export default function HomePage() {
     navigate("/profile?id=" + id);
   };
 
-  // Login modal action handlers (only relevant for "View Profile" flow)
   const handleLoginModalLogin = () => {
     setLoginModal(m => ({ ...m, open:false }));
     navigate('/login');
@@ -772,6 +786,7 @@ export default function HomePage() {
   const handleLogout = () => {
     localStorage.removeItem('sah_current_user');
     localStorage.removeItem('sah_token');
+    localStorage.removeItem('sah_user');
     setCurrentUser(null);
     showToast("Logged out successfully");
     navigate('/');
@@ -817,25 +832,25 @@ export default function HomePage() {
           </nav>
           <div className="sah-nav-ctas">
             {currentUser ? (
-  <>
-    <Link to={getDashboardPath()} className="sah-user-profile-btn">
-      <i className="fas fa-user-circle" />
-      <span style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-        {currentUser.name
-          ? currentUser.name.split(' ')[0]
-          : (currentUser.email ? currentUser.email.split('@')[0] : 'My Account')}
-      </span>
-    </Link>
-    <button onClick={handleLogout} className="sah-logout-btn">
-      <i className="fas fa-right-from-bracket" /> Log Out
-    </button>
-  </>
-) : (
-  <>
-    <button className="sah-btn-ghost-nav" onClick={() => navigate('/login')}>Log In</button>
-    <button className="sah-btn-solid-nav" onClick={() => setRegModal(true)}>Register</button>
-  </>
-)}
+              <>
+                <Link to={getDashboardPath()} className="sah-user-profile-btn">
+                  <i className="fas fa-user-circle" />
+                  <span style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {currentUser.name
+                      ? currentUser.name.split(' ')[0]
+                      : (currentUser.email ? currentUser.email.split('@')[0] : 'My Account')}
+                  </span>
+                </Link>
+                <button onClick={handleLogout} className="sah-logout-btn">
+                  <i className="fas fa-right-from-bracket" /> Log Out
+                </button>
+              </>
+            ) : (
+              <>
+                <button className="sah-btn-ghost-nav" onClick={() => navigate('/login')}>Log In</button>
+                <button className="sah-btn-solid-nav" onClick={() => setRegModal(true)}>Register</button>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -1123,7 +1138,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* LOGIN REQUIRED MODAL — only triggered by "View Profile" when logged out */}
+      {/* LOGIN REQUIRED MODAL */}
       <LoginRequiredModal
         open={loginModal.open}
         message={loginModal.message}

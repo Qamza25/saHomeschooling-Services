@@ -151,6 +151,7 @@ const FieldErr = ({ msg }) => msg
   : null;
 
 // ── saveToLocalStorage — all values passed explicitly, no closure bugs ────────
+// ── KEY FIX: certFilesAll and clearanceFilesAll now carry full base64 data ───
 function saveToLocalStorage({ userId, email, fullName, tier, password, newProvider }) {
   try {
     // sah_users
@@ -216,8 +217,8 @@ const Registration = () => {
   const [showSocialDropdown, setShowSocialDropdown] = useState(false);
   const [addedSocials, setAddedSocials] = useState([]);
   const [termsOpen, setTermsOpen] = useState(false);
-  const [certFiles, setCertFiles] = useState([]);
-  const [clearanceFiles, setClearanceFiles] = useState([]);
+  const [certFiles, setCertFiles] = useState([]);       // { file: File, data: base64 }
+  const [clearanceFiles, setClearanceFiles] = useState([]); // { file: File, data: base64 }
 
   const topRef = useRef(null);
   const socialDropRef = useRef(null);
@@ -234,11 +235,18 @@ const Registration = () => {
     }
   }, []);
 
-  // ── Pre-fill plan from URL ──
+  // ── Pre-fill plan and step from URL ──
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const plan = params.get('plan');
+    const stepParam = params.get('step');
     if (plan) setData(p => ({ ...p, listingPlan: decodeURIComponent(plan) }));
+    if (stepParam) {
+      const parsedStep = parseInt(stepParam, 10);
+      if (!isNaN(parsedStep) && parsedStep >= 1 && parsedStep <= TOTAL) {
+        setStep(parsedStep);
+      }
+    }
   }, [location.search]);
 
   // ── Scroll + clear errors on step change ──
@@ -246,7 +254,6 @@ const Registration = () => {
     if (topRef.current) topRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     setFieldErrors({});
     setTimeSlotErr('');
-    // Clear credentials when returning to step 2 so previous session values don't pre-fill
     if (step === 2) {
       setData(p => ({ ...p, email: '', password: '' }));
       setShowPw(false);
@@ -307,15 +314,29 @@ const Registration = () => {
   const addSocial = (key) => { if (!addedSocials.includes(key)) setAddedSocials(prev => [...prev, key]); setShowSocialDropdown(false); };
   const removeSocial = (key) => { setAddedSocials(prev => prev.filter(k => k !== key)); set(key, ''); };
 
-  // ── File helpers (PDF only) ──
-  const totalFileBytes = (files) => files.reduce((acc, f) => acc + f.size, 0);
+  // ── File helpers — store File object + read base64 immediately ──
+  const totalFileBytes = (files) => files.reduce((acc, f) => acc + f.file.size, 0);
 
-  const handleCertFilesAdd = (e) => {
+  const readFileAsBase64 = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
+  const handleCertFilesAdd = async (e) => {
     const incoming = Array.from(e.target.files || []);
     const pdfOnly = incoming.filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
     if (pdfOnly.length < incoming.length)
       setFieldErrors(prev => ({ ...prev, certFiles: 'Only PDF files are allowed for certificates.' }));
-    const combined = [...certFiles, ...pdfOnly];
+
+    // Read base64 for each file
+    const withData = await Promise.all(pdfOnly.map(async (file) => ({
+      file,
+      data: await readFileAsBase64(file),
+    })));
+
+    const combined = [...certFiles, ...withData];
     if (totalFileBytes(combined) > MAX_TOTAL_UPLOAD_BYTES) {
       setFieldErrors(prev => ({ ...prev, certFiles: `Total file size cannot exceed ${MAX_TOTAL_UPLOAD_MB}MB.` }));
       return;
@@ -327,12 +348,19 @@ const Registration = () => {
 
   const removeCertFile = (idx) => setCertFiles(prev => prev.filter((_, i) => i !== idx));
 
-  const handleClearanceFilesAdd = (e) => {
+  const handleClearanceFilesAdd = async (e) => {
     const incoming = Array.from(e.target.files || []);
     const pdfOnly = incoming.filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
     if (pdfOnly.length < incoming.length)
       setFieldErrors(prev => ({ ...prev, clearanceFiles: 'Only PDF files are allowed for police clearance.' }));
-    const combined = [...clearanceFiles, ...pdfOnly];
+
+    // Read base64 for each file
+    const withData = await Promise.all(pdfOnly.map(async (file) => ({
+      file,
+      data: await readFileAsBase64(file),
+    })));
+
+    const combined = [...clearanceFiles, ...withData];
     if (totalFileBytes([...certFiles, ...combined]) > MAX_TOTAL_UPLOAD_BYTES) {
       setFieldErrors(prev => ({ ...prev, clearanceFiles: `Total combined file size cannot exceed ${MAX_TOTAL_UPLOAD_MB}MB.` }));
       return;
@@ -430,8 +458,24 @@ const Registration = () => {
     else if (svcAreas.includes('Online only') && svcAreas.length === 1) serviceAreaType = 'online';
     else if (svcAreas.includes('Local')) serviceAreaType = 'local';
 
-    const certFileNames = certFiles.map(f => f.name);
-    const clearanceFileNames = clearanceFiles.map(f => f.name);
+    // ── KEY FIX: build certFilesAll and clearanceFilesAll with full base64 data ──
+    const certFilesAll = certFiles.map(f => ({
+      name: f.file.name,
+      type: f.file.type || 'application/pdf',
+      size: f.file.size,
+      data: f.data, // base64 data URL — enables download in dashboard
+    }));
+
+    const clearanceFilesAll = clearanceFiles.map(f => ({
+      name: f.file.name,
+      type: f.file.type || 'application/pdf',
+      size: f.file.size,
+      data: f.data, // base64 data URL — enables download in dashboard
+    }));
+
+    // Legacy flat fields (first file) for backward compat
+    const firstCert = certFilesAll[0] || null;
+    const firstClearance = clearanceFilesAll[0] || null;
 
     const providerId = 'prov_' + Date.now();
 
@@ -455,10 +499,20 @@ const Registration = () => {
       certifications: certsCombined,
       qualCerts,
       certTextEntry: data.qualCerts || '',
-      certDocuments: certFileNames,
+      // ── Full base64 arrays for dashboard download ──
+      certFilesAll,
+      clearanceFilesAll,
+      // Legacy flat fields
+      certDocuments: certFiles.map(f => f.file.name),
+      clearanceDocuments: clearanceFiles.map(f => f.file.name),
+      certFile: firstCert?.data || null,
+      certFileName: firstCert?.name || null,
+      certFileType: firstCert?.type || null,
+      clearanceFile: firstClearance?.data || null,
+      clearanceFileName: firstClearance?.name || null,
+      clearanceFileType: firstClearance?.type || null,
       memberships: qualMemberships,
       clearanceText: data.clearanceText || '',
-      clearanceDocuments: clearanceFileNames,
       tags: data.subjects ? data.subjects.split(',').map(s => s.trim()).filter(Boolean) : [],
       languages: data.languages || [],
       serviceTitle: data.serviceTitle || '',
@@ -567,8 +621,8 @@ const Registration = () => {
           languages: data.languages || [],
         }));
 
-        certFiles.forEach((file, i) => formData.append(`certFile_${i}`, file));
-        clearanceFiles.forEach((file, i) => formData.append(`clearanceFile_${i}`, file));
+        certFiles.forEach((f, i) => formData.append(`certFile_${i}`, f.file));
+        clearanceFiles.forEach((f, i) => formData.append(`clearanceFile_${i}`, f.file));
 
         const providerRes = await fetch(`${API_URL}/providers`, { method: 'POST', body: formData });
         if (!providerRes.ok) {
@@ -623,7 +677,7 @@ const Registration = () => {
   const fe = fieldErrors;
 
   // ── Derived ───────────────────────────────────────────────────────────────
-  const allCertBytes = totalFileBytes([...certFiles, ...clearanceFiles]);
+  const allCertBytes = [...certFiles, ...clearanceFiles].reduce((acc, f) => acc + f.file.size, 0);
   const overLimit = allCertBytes > MAX_TOTAL_UPLOAD_BYTES;
   const primaryFull = data.primaryCat || '';
   const pwStrength = getPasswordStrength(data.password || '');
@@ -641,7 +695,6 @@ const Registration = () => {
           <div key={plan.id} className={`sah-plan-card${selected ? ' selected' : ''}`}
             onClick={() => {
               set('listingPlan', plan.param);
-              // Auto-advance to step 2
               setFieldErrors({});
               setStep(2);
             }}>
@@ -686,7 +739,6 @@ const Registration = () => {
 
   const renderStep2 = () => (
     <div className="sah-form-grid" autoComplete="off">
-      {/* Hidden dummy fields trick browsers into not autofilling the real fields */}
       <input type="text" name="fake-user" style={{ display: 'none' }} readOnly />
       <input type="password" name="fake-pass" style={{ display: 'none' }} readOnly />
       <div className="sah-field sah-full">
@@ -740,7 +792,6 @@ const Registration = () => {
 
   const renderStep3 = () => (
     <div className="sah-form-grid">
-      {/* Row 1: Photo + Experience — aligned and same height */}
       <div className="sah-field" style={{ alignSelf: 'start' }}>
         <label><i className="fas fa-upload" /> Profile Photo / Logo</label>
         <input type="file" accept="image/*"
@@ -806,8 +857,8 @@ const Registration = () => {
               {certFiles.map((f, i) => (
                 <div key={i} className="sah-file-item">
                   <i className="fas fa-file-pdf" style={{ color: '#dc2626', fontSize: '1rem', flexShrink: 0 }} />
-                  <span className="sah-file-item-name">{f.name}</span>
-                  <span className="sah-file-item-size">{formatBytes(f.size)}</span>
+                  <span className="sah-file-item-name">{f.file.name}</span>
+                  <span className="sah-file-item-size">{formatBytes(f.file.size)}</span>
                   <button type="button" className="sah-file-item-remove" onClick={() => removeCertFile(i)}><i className="fas fa-times" /></button>
                 </div>
               ))}
@@ -843,8 +894,8 @@ const Registration = () => {
               {clearanceFiles.map((f, i) => (
                 <div key={i} className="sah-file-item">
                   <i className="fas fa-file-pdf" style={{ color: '#dc2626', fontSize: '1rem', flexShrink: 0 }} />
-                  <span className="sah-file-item-name">{f.name}</span>
-                  <span className="sah-file-item-size">{formatBytes(f.size)}</span>
+                  <span className="sah-file-item-name">{f.file.name}</span>
+                  <span className="sah-file-item-size">{formatBytes(f.file.size)}</span>
                   <button type="button" className="sah-file-item-remove" onClick={() => removeClearanceFile(i)}><i className="fas fa-times" /></button>
                 </div>
               ))}
@@ -875,7 +926,6 @@ const Registration = () => {
 
   const renderStep4 = () => (
     <div className="sah-form-grid">
-      {/* Primary Category and Secondary Categories aligned in the same row */}
       <div className="sah-field" style={{ alignSelf: 'start' }}>
         <label><i className="fas fa-chevron-down" /> Primary Category <em className="sah-req">*</em></label>
         <select value={data.primaryCat || ''} className={fe.primaryCat ? 'err' : ''}
@@ -1007,7 +1057,6 @@ const Registration = () => {
     const priceUnit = PRICING_UNIT_MAP[data.pricingModel] || '';
     return (
       <div className="sah-form-grid">
-        {/* Pricing Model and Starting Price aligned in same row */}
         <div className="sah-field" style={{ alignSelf: 'start' }}>
           <label><i className="fas fa-chevron-down" /> Pricing Model <em className="sah-req">*</em></label>
           <select value={data.pricingModel || ''} className={fe.pricingModel ? 'err' : ''}
@@ -1033,7 +1082,6 @@ const Registration = () => {
         </div>
         <div className="sah-field sah-full">
           <label><i className="fas fa-check-square" /> Days Available <em className="sah-req">*</em></label>
-          {/* Quick-pick presets */}
           <div className="sah-day-quickpick">
             <button type="button" className={`sah-day-quickpick-btn${isDaysPreset('weekdays') ? ' active' : ''}`} onClick={() => setDaysPreset('weekdays')}>
               <i className="fas fa-briefcase" /> Weekdays
@@ -1064,7 +1112,7 @@ const Registration = () => {
             }} />
           {(fe.timeSlots || timeSlotErr)
             ? <div className="sah-field-err"><i className="fas fa-exclamation-circle" /> {fe.timeSlots || timeSlotErr}</div>
-            : <div className="sah-field-hint"><i className="fas fa-info-circle" /> Format: 9:00 - 17:00  ·  Multiple: 9:00 - 12:00, 14:00 - 17:00</div>}
+            : <div className="sah-field-hint"><i className="fas fa-info-circle" /> Format: 9:00 - 17:00  ·  Multiple: 9:00 - 12:00, 14:00 - 17:00</div>}
         </div>
       </div>
     );
@@ -1074,7 +1122,6 @@ const Registration = () => {
     const availableToAdd = EXTRA_SOCIALS.filter(s => !addedSocials.includes(s.key));
     return (
       <div className="sah-form-grid">
-        {/* Phone and WhatsApp aligned in same row */}
         <div className="sah-field" style={{ alignSelf: 'start' }}>
           <label><i className="fas fa-phone" /> Phone Number <em className="sah-req">*</em></label>
           <div className={`sah-prefix-wrap${fe.phoneLocal ? ' err' : ''}`} style={{ height: '44px' }}>
@@ -1113,7 +1160,6 @@ const Registration = () => {
           <label><i className="fas fa-globe" /> Website</label>
           <input type="url" value={data.website || ''} placeholder="https://yourwebsite.co.za" onChange={e => set('website', e.target.value)} />
         </div>
-        {/* LinkedIn is now the primary social link */}
         <div className="sah-field">
           <label><i className="fab fa-linkedin-in" /> LinkedIn</label>
           <input type="url" value={data.linkedin || ''} placeholder="https://linkedin.com/in/yourname" onChange={e => set('linkedin', e.target.value)} />
@@ -1229,6 +1275,23 @@ const Registration = () => {
             </div>
           ))}
         </div>
+        {/* Show uploaded file count in summary */}
+        {(certFiles.length > 0 || clearanceFiles.length > 0) && (
+          <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #bae6fd', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+            {certFiles.length > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.78rem', color: '#0369a1' }}>
+                <i className="fas fa-file-pdf" style={{ color: '#dc2626' }} />
+                <strong>{certFiles.length}</strong> certificate PDF{certFiles.length > 1 ? 's' : ''} attached
+              </div>
+            )}
+            {clearanceFiles.length > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.78rem', color: '#0369a1' }}>
+                <i className="fas fa-shield-alt" style={{ color: '#059669' }} />
+                <strong>{clearanceFiles.length}</strong> clearance PDF{clearanceFiles.length > 1 ? 's' : ''} attached
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </>
   );
@@ -1300,7 +1363,6 @@ const Registration = () => {
           </div>
         </div>
 
-        {/* Step 1 has no nav bar — selection auto-advances */}
         {step > 1 && (
           <div className="sah-form-nav-wrap">
             <button className="sah-nav-prev" onClick={prev}><i className="fas fa-arrow-left" /> Previous</button>

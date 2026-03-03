@@ -94,6 +94,8 @@ const CSS = `
   .ur-success-banner { background:#ecfdf5; border:1.5px solid #a7f3d0; border-radius:var(--r); padding:14px 18px; color:#065f46; font-size:0.9rem; font-weight:700; margin-bottom:18px; display:flex; align-items:center; gap:10px; }
   .ur-success-banner i { font-size:1.1rem; color:#16a34a; flex-shrink:0; }
 
+  .ur-autofill-trap { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; opacity:0; pointer-events:none; }
+
   @media(max-width:660px) {
     .ur-cols { grid-template-columns:1fr; }
     .ur-col-sep { display:none; }
@@ -110,7 +112,6 @@ function registerUserLocally({ username, email, password }) {
     const users = JSON.parse(localStorage.getItem('sah_users') || '[]');
     const emailLower = email.trim().toLowerCase();
 
-    // Check duplicates
     if (users.find(u => (u.email || '').toLowerCase() === emailLower)) {
       return { success: false, error: 'email_taken' };
     }
@@ -169,6 +170,7 @@ const UserRegister = () => {
   const [successMsg, setSuccessMsg] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  // Single merged useEffect — injects styles AND clears autofill
   useEffect(() => {
     injectHead();
     if (!document.getElementById('sah-ur-css')) {
@@ -176,25 +178,32 @@ const UserRegister = () => {
       s.id = 'sah-ur-css'; s.textContent = CSS;
       document.head.appendChild(s);
     }
+    // Force-clear any browser-autofilled values after paint
+    const t = setTimeout(() => {
+      setUsername('');
+      setEmail('');
+      setPassword('');
+      setConfirm('');
+    }, 50);
+    return () => clearTimeout(t);
   }, []);
 
   const validate = () => {
     const e = {};
     const uname = username.trim();
-    // Username validation
     if (!uname || uname.length < 3)    e.username = 'Username must be at least 3 characters.';
     else if (/\s/.test(uname))         e.username = 'Username cannot contain spaces.';
-    else if (!/^[a-zA-Z0-9_.-]+$/.test(uname)) e.username = 'Username may only contain letters, numbers, _ . -';
-    // Relaxed email: just needs @ and some characters around it
+    else if (!/^[a-zA-Z0-9_.\-]+$/.test(uname)) e.username = 'Username may only contain letters, numbers, _ . -';
+
     const emailTrimmed = email.trim();
     if (!emailTrimmed) {
       e.email = 'Please enter your email address.';
     } else if (emailTrimmed.indexOf('@') < 1) {
       e.email = 'Please enter a valid email address (must include @).';
     }
-    
+
     if (!password || password.length < 8) e.password = 'Password must be at least 8 characters.';
-    if (password !== confirm)          e.confirm = 'Passwords do not match.';
+    if (password !== confirm)             e.confirm  = 'Passwords do not match.';
     return e;
   };
 
@@ -205,7 +214,6 @@ const UserRegister = () => {
 
     const emailLower = email.trim().toLowerCase();
 
-    // Try AuthContext registerUser first, then fall back to local
     try {
       if (typeof registerUser === 'function') {
         const result = await registerUser({
@@ -232,13 +240,11 @@ const UserRegister = () => {
           setSubmitting(false);
           return;
         }
-        // If API failed for other reasons, fall through to local
       }
     } catch (apiErr) {
       console.warn('API registerUser failed, using localStorage fallback:', apiErr?.message);
     }
 
-    // ── Local fallback ──
     const localResult = registerUserLocally({ username: username.trim(), email: emailLower, password });
 
     if (!localResult.success) {
@@ -253,7 +259,6 @@ const UserRegister = () => {
       return;
     }
 
-    // Log the new user in via AuthContext if possible
     try {
       if (typeof login === 'function') {
         login(localResult.user);
@@ -321,11 +326,22 @@ const UserRegister = () => {
 
               {/* ── LEFT: form fields ── */}
               <div>
+
+                {/* Honeypot trap — browser autofills these invisible fields instead of real ones */}
+                <div aria-hidden="true" className="ur-autofill-trap">
+                  <input type="text" name="username" tabIndex="-1" readOnly />
+                  <input type="email" name="email" tabIndex="-1" readOnly />
+                  <input type="password" name="password" tabIndex="-1" readOnly />
+                </div>
+
                 <div className="ur-field">
                   <label><i className="fas fa-at" /> Username <span style={{ color: 'var(--acc)' }}>*</span></label>
                   <input
-                    type="text" value={username}
+                    type="text"
+                    value={username}
                     placeholder="e.g. sarah_learns"
+                    autoComplete="off"
+                    name="new-username"
                     className={fe.username ? 'err' : ''}
                     onChange={e => { setUsername(e.target.value); setErrors(p => ({ ...p, username: '' })); setSubmitErr(''); }}
                     onKeyDown={e => e.key === 'Enter' && handleSubmit()}
@@ -339,8 +355,12 @@ const UserRegister = () => {
                 <div className="ur-field">
                   <label><i className="fas fa-envelope" /> Email Address <span style={{ color: 'var(--acc)' }}>*</span></label>
                   <input
-                    type="email" value={email}
-                    placeholder="you@example.co.za"
+                    type="text"
+                    inputMode="email"
+                    value={email}
+                    placeholder="janedoe@gmail.com"
+                    autoComplete="off"
+                    name="new-email"
                     className={fe.email ? 'err' : ''}
                     onChange={e => { setEmail(e.target.value); setErrors(p => ({ ...p, email: '' })); setSubmitErr(''); }}
                     onKeyDown={e => e.key === 'Enter' && handleSubmit()}
@@ -352,8 +372,11 @@ const UserRegister = () => {
                   <label><i className="fas fa-lock" /> Password <span style={{ color: 'var(--acc)' }}>*</span></label>
                   <div className="ur-pw">
                     <input
-                      type={showPw ? 'text' : 'password'} value={password}
-                      placeholder="Min. 8 characters"
+                      type={showPw ? 'text' : 'password'}
+                      value={password}
+                      placeholder="••••••••"
+                      autoComplete="new-password"
+                      name="new-password"
                       className={fe.password ? 'err' : ''}
                       onChange={e => { setPassword(e.target.value); setErrors(p => ({ ...p, password: '' })); setSubmitErr(''); }}
                       onKeyDown={e => e.key === 'Enter' && handleSubmit()}
@@ -369,8 +392,11 @@ const UserRegister = () => {
                   <label><i className="fas fa-lock" /> Confirm Password <span style={{ color: 'var(--acc)' }}>*</span></label>
                   <div className="ur-pw">
                     <input
-                      type={showCf ? 'text' : 'password'} value={confirm}
-                      placeholder="Repeat your password"
+                      type={showCf ? 'text' : 'password'}
+                      value={confirm}
+                      placeholder="••••••••"
+                      autoComplete="new-password"
+                      name="new-confirm-password"
                       className={fe.confirm ? 'err' : ''}
                       onChange={e => { setConfirm(e.target.value); setErrors(p => ({ ...p, confirm: '' })); setSubmitErr(''); }}
                       onKeyDown={e => e.key === 'Enter' && handleSubmit()}
