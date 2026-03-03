@@ -163,10 +163,6 @@ const CSS = `
   .sah-plan-cta-link{display:inline-flex;align-items:center;gap:7px;padding:8px 18px;background:var(--accent);color:#fff !important;border:none;border-radius:var(--radius);font-size:0.82rem;font-weight:700;transition:background 0.15s;cursor:pointer;text-decoration:none;}
   .sah-plan-cta-link:hover{background:var(--accent-dark);}
 
-  /* FEATURED BANNER */
-  .sah-featured-banner{background:linear-gradient(135deg,#fff8f2,#fff3e8);border:1px solid rgba(201,98,26,0.18);border-radius:var(--radius-lg);padding:10px 18px;margin-bottom:18px;display:flex;align-items:center;gap:10px;font-size:0.82rem;color:#c9621a;font-weight:600;}
-  .sah-featured-banner i{font-size:0.85rem;}
-
   /* FILTER BAR */
   .sah-filter-bar{background:var(--white);border-bottom:1px solid var(--border);}
   .sah-filter-bar-row{display:flex;align-items:center;gap:6px;padding:16px 0;overflow-x:auto;-webkit-overflow-scrolling:touch;}
@@ -286,6 +282,45 @@ const CSS = `
   .sah-modal-switch{text-align:center;margin-top:12px;font-size:0.85rem;color:var(--muted);}
   .sah-modal-switch a{color:var(--accent);font-weight:600;}
 
+  /* LOGIN REQUIRED MODAL */
+  .sah-login-modal-icon{
+    width:56px;height:56px;border-radius:50%;
+    background:rgba(201,98,26,0.12);
+    display:flex;align-items:center;justify-content:center;
+    margin:0 auto 16px;
+    font-size:1.4rem;color:var(--accent);
+  }
+  .sah-login-modal-title{
+    font-family:'Playfair Display',serif;font-size:1.25rem;font-weight:800;
+    color:var(--dark);text-align:center;margin-bottom:8px;
+  }
+  .sah-login-modal-desc{
+    font-size:0.88rem;color:var(--muted);text-align:center;
+    line-height:1.6;margin-bottom:22px;
+  }
+  .sah-login-modal-actions{display:flex;flex-direction:column;gap:9px;}
+  .sah-login-modal-primary{
+    width:100%;padding:12px 20px;background:var(--accent);color:#fff;
+    border:none;border-radius:var(--radius);font-family:'DM Sans',sans-serif;
+    font-weight:700;font-size:0.92rem;cursor:pointer;
+    transition:background 0.15s;
+  }
+  .sah-login-modal-primary:hover{background:var(--accent-dark);}
+  .sah-login-modal-secondary{
+    width:100%;padding:11px 20px;background:transparent;color:var(--dark);
+    border:1.5px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;
+    font-weight:600;font-size:0.88rem;cursor:pointer;
+    transition:all 0.15s;
+  }
+  .sah-login-modal-secondary:hover{border-color:var(--accent);color:var(--accent);}
+  .sah-login-modal-divider{
+    display:flex;align-items:center;gap:10px;
+    font-size:0.75rem;color:var(--grey);margin:4px 0;
+  }
+  .sah-login-modal-divider::before,.sah-login-modal-divider::after{
+    content:'';flex:1;height:1px;background:var(--border);
+  }
+
   /* TOAST */
   .sah-toast{position:fixed;bottom:22px;right:22px;background:var(--grey);color:#fff;padding:11px 18px;border-radius:var(--radius);font-size:0.88rem;font-weight:600;box-shadow:var(--shadow-lg);transform:translateY(60px);opacity:0;transition:all 0.26s;z-index:9999;display:flex;align-items:center;gap:8px;pointer-events:none;}
   .sah-toast.show{transform:translateY(0);opacity:1;}
@@ -321,23 +356,6 @@ const CSS = `
     .sah-footer-bottom-links{flex-wrap:wrap;gap:12px;}
   }
 `;
-
-/* ─── FEATURED SLOT HELPERS ─────────────────────────────────────────────── */
-function getFeaturedSlotProviderIds() {
-  try {
-    const slots = JSON.parse(localStorage.getItem("sah_featured_slots") || "[]");
-    return slots
-      .filter(s => s.provider && s.providerId)
-      .map(s => ({ id: s.providerId, name: s.provider, slotId: s.id }));
-  } catch { return []; }
-}
-
-function getFeaturedSlotProviderNames() {
-  try {
-    const slots = JSON.parse(localStorage.getItem("sah_featured_slots") || "[]");
-    return slots.filter(s => s.provider).map(s => s.provider);
-  } catch { return []; }
-}
 
 /* ─── DATA ──────────────────────────────────────────────────────────────── */
 const SEED = [
@@ -459,15 +477,7 @@ function getAll() {
     const seen = new Set();
     const all = allRaw.filter(p => { if (seen.has(p.id)) return false; seen.add(p.id); return true; });
 
-    const slotIds   = getFeaturedSlotProviderIds();
-    const slotNames = getFeaturedSlotProviderNames();
-    const slotIdSet = new Set(slotIds.map(s => s.id));
-
-    const marked = all.map(p => {
-      const inSlotById   = slotIdSet.has(p.id);
-      const inSlotByName = slotNames.includes(p.name);
-      return { ...p, _inFeaturedSlot: inSlotById || inSlotByName };
-    });
+    const marked = all.map(p => ({ ...p, _inFeaturedSlot: false }));
 
     return marked.sort((a, b) => {
       if (a._inFeaturedSlot && !b._inFeaturedSlot) return -1;
@@ -484,7 +494,6 @@ function starsStr(r) { return "★".repeat(Math.floor(r)) + (r % 1 >= 0.5 ? "½"
 
 /* ─── SUB-COMPONENTS ─────────────────────────────────────────────────────── */
 
-// Badge: only shows featured, verified, new — no spotlight
 function Badge({ badge }) {
   if (!badge) return null;
   if (badge === "featured") return <span className="sah-cbadge sah-cbadge-featured">Featured</span>;
@@ -540,7 +549,7 @@ function ProviderCard({ p, onView }) {
   );
 }
 
-function PlanCard({ plan, openId, onToggle, allOpen }) {
+function PlanCard({ plan, openId, onToggle, allOpen, onCtaClick }) {
   const isOpen = allOpen || openId === plan.id;
   return (
     <div className={`sah-plan-item${plan.highlight ? " highlight" : ""}`} onClick={() => onToggle(plan.id)}>
@@ -568,13 +577,56 @@ function PlanCard({ plan, openId, onToggle, allOpen }) {
                 </li>
               ))}
             </ul>
-            <Link
-              to={`/register/provider?plan=${encodeURIComponent(plan.planParam)}`}
+            <button
               className="sah-plan-cta-link"
-              onClick={e => e.stopPropagation()}
+              onClick={e => { e.stopPropagation(); onCtaClick(plan.planParam); }}
             >
               {plan.cta}
-            </Link>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── LOGIN REQUIRED MODAL (only used for "View Profile") ────────────────── */
+function LoginRequiredModal({ open, onClose, onLogin, onRegister, message }) {
+  return (
+    <div
+      className={`sah-modal-overlay${open ? " open" : ""}`}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="sah-modal-box">
+        <div className="sah-modal-head" style={{ background:"#5a5a5a" }}>
+          <h2>Login Required</h2>
+          <p>You need an account to continue</p>
+          <button className="sah-modal-close" onClick={onClose}>
+            <i className="fas fa-times" />
+          </button>
+        </div>
+        <div className="sah-modal-body">
+          <div style={{ paddingTop:"8px" }}>
+            <div className="sah-login-modal-icon">
+              <i className="fas fa-lock" />
+            </div>
+            <div className="sah-login-modal-title">
+              {message || "Please log in to continue"}
+            </div>
+            <div className="sah-login-modal-desc">
+              Sign in to your existing account, or create a free account to get started.
+            </div>
+            <div className="sah-login-modal-actions">
+              <button className="sah-login-modal-primary" onClick={onLogin}>
+                <i className="fas fa-right-to-bracket" style={{ marginRight:"8px" }} />
+                Log In to My Account
+              </button>
+              <div className="sah-login-modal-divider">or</div>
+              <button className="sah-login-modal-secondary" onClick={onRegister}>
+                <i className="fas fa-user-plus" style={{ marginRight:"8px" }} />
+                Create a Free Account
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -597,8 +649,9 @@ export default function HomePage() {
   const [nlEmail, setNlEmail]           = useState("");
   const [nlMsg, setNlMsg]               = useState({ text:"", type:"" });
   const [toast, setToast]               = useState({ show:false, msg:"", err:false });
-  const [featuredSlotCount, setFeaturedSlotCount] = useState(0);
   const [currentUser, setCurrentUser]   = useState(null);
+  // Login-required modal — only shown when viewing a profile while logged out
+  const [loginModal, setLoginModal]     = useState({ open:false, message:"" });
 
   useEffect(() => {
     injectHead();
@@ -608,7 +661,6 @@ export default function HomePage() {
       document.head.appendChild(s);
     }
 
-    // Check for logged in user
     const checkUser = () => {
       try {
         const user = JSON.parse(localStorage.getItem('sah_current_user'));
@@ -624,15 +676,13 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    const h = (e) => { if (e.key === "Escape") setRegModal(false); };
+    const h = (e) => { if (e.key === "Escape") { setRegModal(false); setLoginModal(m => ({ ...m, open:false })); } };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
   }, []);
 
   useEffect(() => {
-    const all = getAll();
-    setProviders(all);
-    setFeaturedSlotCount(all.filter(p => p._inFeaturedSlot).length);
+    setProviders(getAll());
   }, []);
 
   const showToast = useCallback((msg, err = false) => {
@@ -679,7 +729,35 @@ export default function HomePage() {
     }
   };
 
-  const viewProfile = (id) => { navigate("/profile?id=" + id); };
+  // ── PLAN CTA: always navigate to provider registration step 2 ──────────────
+  // No login check here — anyone can start the registration flow regardless of
+  // whether they are logged in or not.
+  const handlePlanCtaClick = (planParam) => {
+    navigate(`/register/provider?step=2&plan=${encodeURIComponent(planParam)}`);
+  };
+
+  // ── VIEW PROFILE: requires login ───────────────────────────────────────────
+  const viewProfile = (id) => {
+    if (!currentUser) {
+      setLoginModal({
+        open: true,
+        message: "Please log in to view provider profiles.",
+      });
+      return;
+    }
+    navigate("/profile?id=" + id);
+  };
+
+  // Login modal action handlers (only relevant for "View Profile" flow)
+  const handleLoginModalLogin = () => {
+    setLoginModal(m => ({ ...m, open:false }));
+    navigate('/login');
+  };
+
+  const handleLoginModalRegister = () => {
+    setLoginModal(m => ({ ...m, open:false }));
+    setRegModal(true);
+  };
 
   const handleNewsletter = () => {
     const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(nlEmail.trim());
@@ -815,12 +893,6 @@ export default function HomePage() {
             <div className={`sah-hero-plans-wrap${plansVisible ? " open" : ""}`}>
               <div className="sah-hero-plans-inner">
                 <div className="sah-hero-plans-grid-outer">
-                  {featuredSlotCount > 0 && (
-                    <div className="sah-featured-banner">
-                      <i className="fas fa-star" />
-                      {featuredSlotCount} provider{featuredSlotCount > 1 ? "s" : ""} currently in a Featured Spotlight slot
-                    </div>
-                  )}
                   <div className="sah-hero-plans-grid">
                     {PLANS.map(plan => (
                       <PlanCard
@@ -829,6 +901,7 @@ export default function HomePage() {
                         openId={openPlanId}
                         onToggle={togglePlan}
                         allOpen={allPlansOpen}
+                        onCtaClick={handlePlanCtaClick}
                       />
                     ))}
                   </div>
@@ -1046,6 +1119,15 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+
+      {/* LOGIN REQUIRED MODAL — only triggered by "View Profile" when logged out */}
+      <LoginRequiredModal
+        open={loginModal.open}
+        message={loginModal.message}
+        onClose={() => setLoginModal(m => ({ ...m, open:false }))}
+        onLogin={handleLoginModalLogin}
+        onRegister={handleLoginModalRegister}
+      />
 
       {/* TOAST */}
       <div

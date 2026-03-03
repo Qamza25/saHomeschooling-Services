@@ -8,6 +8,11 @@ import Footer from '../components/common/Footer';
 import TagsInput from '../components/client/TagsInput';
 import { DAYS_OF_WEEK, PRICING_MODELS, PROVINCES } from '../utils/constants';
 import { getPlanLimits } from '../utils/helpers';
+
+const API_URL = (typeof process !== 'undefined' && process.env?.REACT_APP_API_URL)
+  ? process.env.REACT_APP_API_URL
+  : 'http://localhost:5000/api';
+
 /* ─────────────── localStorage helpers ─────────────── */
 function getCurrentUser() {
   try { return JSON.parse(localStorage.getItem('sah_current_user') || 'null'); }
@@ -16,21 +21,123 @@ function getCurrentUser() {
 function getProviderById(id) {
   try {
     const all = JSON.parse(localStorage.getItem('sah_providers') || '[]');
-    return all.find(p => p.id === id) || null;
+    return all.find(p => p.id === id || p.userId === id) || null;
   } catch { return null; }
 }
 function saveProviderById(updated) {
   try {
     const all = JSON.parse(localStorage.getItem('sah_providers') || '[]');
-    const idx = all.findIndex(p => p.id === updated.id);
+    const idx = all.findIndex(p => p.id === updated.id || p.userId === updated.id);
     if (idx !== -1) all[idx] = updated; else all.push(updated);
     localStorage.setItem('sah_providers', JSON.stringify(all));
     return true;
   } catch { return false; }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  mapDbProfileToLocal
+//  Converts a Prisma ProviderProfile row (DB shape) → flat UI shape used by
+//  the dashboard.  Handles both the API response and the localStorage fallback.
+// ─────────────────────────────────────────────────────────────────────────────
+function mapDbProfileToLocal(db) {
+  if (!db) return null;
+  return {
+    // identity
+    id:                   db.id            || db.userId || '',
+    userId:               db.userId        || db.id     || '',
+    name:                 db.fullName      || db.name   || '',
+    email:                db.user?.email   || db.email  || db.inquiryEmail || '',
+    accountType:          db.accountType   || 'Individual Provider',
+    // profile
+    bio:                  db.bio           || '',
+    yearsExperience:      db.experience    != null ? String(db.experience) : '',
+    languages:            db.languages     || [],
+    primaryCategory:      db.primaryCategory || db.category || '',
+    secondaryCategories:  db.secondaryCategories || [],
+    // tags from subjects field or existing tags array
+    tags: db.tags?.length
+      ? db.tags
+      : (db.subjects ? db.subjects.split(',').map(s => s.trim()).filter(Boolean) : []),
+    // qualifications
+    degrees:              db.degrees        || '',
+    certifications:       db.certifications || '',
+    memberships:          db.memberships    || '',
+    clearance:            db.clearance      || '',
+    // service (DB stores flat; UI wraps in array)
+    serviceTitle:         db.serviceTitle   || '',
+    serviceDesc:          db.serviceDesc    || '',
+    subjects:             db.subjects       || '',
+    ageGroups:            db.ageGroups      || [],
+    deliveryMode:         db.deliveryMode   || db.delivery || '',
+    services: db.services?.length
+      ? db.services
+      : [{
+          title:        db.serviceTitle || '',
+          description:  db.serviceDesc  || '',
+          ageGroups:    db.ageGroups    || [],
+          deliveryMode: db.deliveryMode || db.delivery || 'Online',
+          subjects:     db.subjects     || '',
+        }],
+    // location
+    city:             db.city             || '',
+    province:         db.province         || '',
+    serviceAreas:     db.serviceAreas     || [],
+    serviceAreaType:  db.serviceAreaType  || 'national',
+    radius:           db.radius           != null ? String(db.radius) : '',
+    // pricing & availability
+    pricingModel:     db.pricingModel     || '',
+    startingPrice:    db.startingPrice    || db.priceFrom || '',
+    availabilityDays: db.availabilityDays || [],
+    availabilityNotes:db.availabilityNotes|| '',
+    // contact
+    contactName:      db.contactName      || db.fullName || db.name || '',
+    phone:            db.phone            || '',
+    whatsapp:         db.whatsapp         || '',
+    contactEmail:     db.inquiryEmail     || db.contactEmail || db.email || db.user?.email || '',
+    // social / web
+    website:          db.website          || db.social || '',
+    social:           db.website          || db.social || '',
+    facebook:         db.facebook         || '',
+    instagram:        db.instagram        || '',
+    linkedin:         db.linkedin         || '',
+    tiktok:           db.tiktok           || '',
+    twitter:          db.twitter          || '',
+    youtube:          db.youtube          || '',
+    // files / media
+    image:            db.profilePhoto     || db.photo || db.image || null,
+    photo:            db.profilePhoto     || db.photo || db.image || null,
+    profilePhoto:     db.profilePhoto     || db.photo || db.image || null,
+    certFile:         db.certFile         || null,
+    certFileName:     db.certFileName     || null,
+    certFileType:     db.certFileType     || null,
+    certFilesAll:     db.certFilesAll     || [],
+    certDocuments:    db.certDocuments    || [],
+    clearanceFile:    db.clearanceFile    || null,
+    clearanceFileName:db.clearanceFileName|| null,
+    clearanceFileType:db.clearanceFileType|| null,
+    clearanceFilesAll:    db.clearanceFilesAll    || [],
+    clearanceDocuments:   db.clearanceDocuments   || [],
+    // status / plan
+    plan:         db.listingPlan  || db.plan || db.tier || 'free',
+    listingPlan:  db.listingPlan  || db.plan || db.tier || 'free',
+    tier:         db.listingPlan  || db.tier || db.plan || 'free',
+    status:       (db.status      || 'pending').toLowerCase(),
+    publicToggle: db.publicDisplay ?? db.publicToggle ?? true,
+    listingPublic:db.publicDisplay ?? db.listingPublic ?? true,
+    // reviews
+    reviews: db.reviews
+      ? (Array.isArray(db.reviews)
+          ? { average: 0, count: db.reviews.length, items: db.reviews }
+          : db.reviews)
+      : { average: 0, count: 0, items: [] },
+    registered: db.createdAt   || db.registered || null,
+    lastLogin:  db.user?.lastLogin || db.lastLogin || null,
+  };
+}
+
 /* ─────────────── empty profile ─────────────── */
 const EMPTY_PROFILE = {
-  id: '', name: '', email: '', accountType: 'Individual Provider',
+  id: '', userId: '', name: '', email: '', accountType: 'Individual Provider',
   yearsExperience: '', languages: [], primaryCategory: '', secondaryCategories: [],
   tags: [], bio: '', degrees: '', certifications: '', memberships: '', clearance: '',
   services: [{ title: '', description: '', ageGroups: [], deliveryMode: 'Online', subjects: '' }],
@@ -39,11 +146,16 @@ const EMPTY_PROFILE = {
   deliveryMode: '', pricingModel: '', startingPrice: '',
   availabilityDays: [], availabilityNotes: '',
   contactName: '', phone: '', whatsapp: '', contactEmail: '',
-  social: '', website: '', facebook: '', publicToggle: true,
+  social: '', website: '', facebook: '', instagram: '', linkedin: '',
+  tiktok: '', twitter: '', youtube: '',
+  publicToggle: true,
   plan: 'free', listingPublic: true, status: 'pending',
   image: null, photo: null, profilePhoto: null,
+  certFile: null, certFileName: null, certFileType: null, certFilesAll: [], certDocuments: [],
+  clearanceFile: null, clearanceFileName: null, clearanceFileType: null, clearanceFilesAll: [], clearanceDocuments: [],
   reviews: { average: 0, count: 0, items: [] },
 };
+
 /* ─────────────── plan definitions ─────────────── */
 const PLAN_CARDS = [
   {
@@ -66,6 +178,7 @@ const TABS = [
   { id: 'contact',  label: 'Contact & Social',   icon: 'fa-address-card' },
   { id: 'plan',     label: 'Plan & Reviews',     icon: 'fa-crown' },
 ];
+
 /* ─────────────── styles ─────────────── */
 const DASH_CSS = `
   .cd-wrap { font-family:'DM Sans','Segoe UI',sans-serif; background:#f4f1ec; min-height:100vh; -webkit-font-smoothing:antialiased; }
@@ -177,7 +290,6 @@ const DASH_CSS = `
   .cd-info-note { display:flex; align-items:flex-start; gap:8px; padding:10px 13px; background:#fffbeb; border-radius:7px; border:1px solid #fde68a; font-size:0.77rem; color:#92400e; margin-bottom:12px; }
   .cd-info-note i { color:#f59e0b; margin-top:1px; flex-shrink:0; }
   .cd-info-note.last { margin-bottom:0; }
-  .cd-qual-parsed { padding:9px 13px; background:#ecfdf5; border-radius:7px; border:1px solid #a7f3d0; font-size:0.77rem; color:#065f46; margin-top:8px; display:flex; align-items:center; gap:7px; }
   .cd-photo-wrap { position:relative; display:inline-block; flex-shrink:0; }
   .cd-photo-img  { width:76px; height:76px; border-radius:50%; object-fit:cover; border:3px solid #c9621a; display:block; }
   .cd-photo-placeholder { width:76px; height:76px; border-radius:50%; background:#fef3e8; border:3px solid #c9621a; display:flex; align-items:center; justify-content:center; color:#c9621a; font-size:1.5rem; }
@@ -190,22 +302,42 @@ const DASH_CSS = `
   .cd-sidebar-body  { padding:14px 16px; }
   .cd-comp-item { display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid #f8f6f3; }
   .cd-comp-item:last-of-type { border-bottom:none; }
+  /* ── uploaded document card ── */
+  .cd-doc-card { display:flex; align-items:center; gap:10px; padding:10px 13px; background:#faf9f7; border:1.5px solid #e5e0d8; border-radius:8px; margin-bottom:8px; }
+  .cd-doc-icon { width:32px; height:32px; border-radius:7px; background:#fff3e8; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .cd-doc-icon i { color:#c9621a; font-size:0.82rem; }
+  .cd-doc-info { flex:1; min-width:0; }
+  .cd-doc-name { font-size:0.78rem; font-weight:700; color:#1a1a1a; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .cd-doc-sub  { font-size:0.68rem; color:#aaa; margin-top:1px; }
+  .cd-doc-dl { padding:5px 11px; border-radius:5px; background:#c9621a; color:#fff; font-size:0.7rem; font-weight:700; border:none; cursor:pointer; font-family:inherit; transition:background .14px; flex-shrink:0; }
+  .cd-doc-dl:hover { background:#a84e12; }
+  /* ── qual upload notice ── */
+  .cd-qual-notice { display:flex; align-items:flex-start; gap:8px; padding:10px 13px; background:#f0f9ff; border-radius:7px; border:1px solid #bae6fd; font-size:0.77rem; color:#0369a1; margin-top:8px; }
+  .cd-qual-notice i { color:#0284c7; margin-top:1px; flex-shrink:0; }
   @media(max-width:1024px) { .cd-layout { grid-template-columns:1fr; } .cd-plan-grid { grid-template-columns:1fr; } }
   @media(max-width:768px)  { .cd-main { padding:16px 14px 48px; } .cd-hero-top { padding:0 16px 24px; } .cd-tab-bar { padding:0 14px; overflow-x:auto; flex-wrap:nowrap; } .cd-row { grid-template-columns:1fr; } .cd-svc-grid { grid-template-columns:1fr 1fr; } }
   @media(max-width:520px)  { .cd-svc-grid { grid-template-columns:1fr; } .cd-row-3 { grid-template-columns:1fr 1fr; } .cd-plan-grid { grid-template-columns:1fr; } }
 `;
+
 /* ═══════════════════════════════════════════════════ */
 const ClientDashboard = () => {
   const { user, updateUserPlan } = useAuth();
   const { showNotification }     = useNotification();
   const navigate                 = useNavigate();
   const photoInputRef            = useRef(null);
+  const qualFileInputRef         = useRef(null);
+  const clearanceFileInputRef    = useRef(null);
+
   const [activeTab,    setActiveTab]    = useState('profile');
   const [editing,      setEditing]      = useState(false);
   const [snapshot,     setSnapshot]     = useState(null);
   const [profileData,  setProfileData]  = useState(EMPTY_PROFILE);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [loading,      setLoading]      = useState(false);
+  const [dataLoading,  setDataLoading]  = useState(true);
+  const [qualFileName,     setQualFileName]     = useState('');
+  const [clearanceFileName, setClearanceFileName] = useState('');
+
   /* inject CSS once */
   useEffect(() => {
     if (!document.getElementById('cd-styles')) {
@@ -220,25 +352,60 @@ const ClientDashboard = () => {
       document.head.appendChild(l);
     }
   }, []);
-  /* load data */
+
+  /* ── load profile: try API first, fall back to localStorage ── */
   useEffect(() => {
     const cu = getCurrentUser();
     if (!cu) { navigate('/login'); return; }
-    const stored = cu.id ? getProviderById(cu.id) : null;
-    if (stored) {
-      setProfileData({ ...EMPTY_PROFILE, ...stored });
-      setPhotoPreview(stored.profilePhoto || stored.photo || stored.image || null);
-    } else {
-      setProfileData(prev => ({
-        ...prev,
-        id:           cu.id    || prev.id,
-        name:         cu.name  || prev.name,
-        email:        cu.email || prev.email,
-        plan:         cu.plan  || prev.plan,
-        contactEmail: cu.email || prev.contactEmail,
-      }));
-    }
+
+    const load = async () => {
+      setDataLoading(true);
+      const token = localStorage.getItem('sah_token');
+
+      // 1. Try API
+      if (token && cu.id && !String(token).startsWith('local_')) {
+        try {
+          const res = await fetch(`${API_URL}/providers/${cu.id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (res.ok) {
+            const dbRow  = await res.json();
+            const mapped = mapDbProfileToLocal(dbRow);
+            setProfileData(mapped);
+            setPhotoPreview(mapped.profilePhoto || null);
+            // keep localStorage in sync so offline fallback is fresh
+            saveProviderById({ ...mapped, id: cu.id, userId: cu.id });
+            setDataLoading(false);
+            return;
+          }
+        } catch (err) {
+          console.warn('API load failed, falling back to localStorage:', err.message);
+        }
+      }
+
+      // 2. Fall back to localStorage
+      const stored = cu.id ? getProviderById(cu.id) : null;
+      if (stored) {
+        const mapped = mapDbProfileToLocal(stored);
+        setProfileData(mapped);
+        setPhotoPreview(mapped.profilePhoto || null);
+      } else {
+        setProfileData(prev => ({
+          ...prev,
+          id:           cu.id    || prev.id,
+          userId:       cu.id    || prev.userId,
+          name:         cu.name  || prev.name,
+          email:        cu.email || prev.email,
+          plan:         cu.plan  || prev.plan,
+          contactEmail: cu.email || prev.contactEmail,
+        }));
+      }
+      setDataLoading(false);
+    };
+
+    load();
   }, [navigate]);
+
   /* computed */
   const maxServices = (getPlanLimits && getPlanLimits(profileData.plan)?.maxServices)
     || (profileData.plan === 'featured' ? 10 : profileData.plan === 'pro' ? 5 : 1);
@@ -246,57 +413,106 @@ const ClientDashboard = () => {
   const isPaidPlan  = profileData.plan === 'pro' || profileData.plan === 'featured';
   const planOrder   = { free: 0, pro: 1, featured: 2 };
   const days        = DAYS_OF_WEEK || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
   /* ─── edit helpers ─── */
   const startEdit = useCallback(() => {
     setSnapshot({ ...profileData });
     setEditing(true);
   }, [profileData]);
+
   const cancelEdit = useCallback(() => {
     if (snapshot) setProfileData(snapshot);
     setEditing(false);
     setSnapshot(null);
+    setQualFileName('');
+    setClearanceFileName('');
     showNotification('Changes discarded', 'info');
   }, [snapshot, showNotification]);
+
   const upd = useCallback((patch) => {
     setProfileData(prev => ({ ...prev, ...patch }));
   }, []);
-  /* ─── FIXED saveChanges — reads latest state synchronously then saves ─── */
+
+  /* ─── saveChanges — reads latest state then persists ─── */
   const saveChanges = useCallback(() => {
     setLoading(true);
-    // Use a ref-like approach: read the current profileData directly from state
-    // by passing a function to setState that captures the current value
     setProfileData(currentData => {
-      // Perform save synchronously inside the state updater
-      const toSave = {
-        ...currentData,
-        social: currentData.website || currentData.social || '',
-      };
+      const toSave = { ...currentData, social: currentData.website || currentData.social || '' };
+
+      // 1. localStorage (always)
       try {
         const saved = saveProviderById(toSave);
         if (saved) {
-          // Update sah_current_user name/plan
           const cu = getCurrentUser();
-          if (cu) {
-            localStorage.setItem('sah_current_user', JSON.stringify({
-              ...cu,
-              name: currentData.name,
-              plan: currentData.plan,
-            }));
-          }
+          if (cu) localStorage.setItem('sah_current_user', JSON.stringify({ ...cu, name: currentData.name, plan: currentData.plan }));
         }
-      } catch (err) {
-        console.error('Save error:', err);
+      } catch (err) { console.error('Save error:', err); }
+
+      // 2. API sync (non-blocking)
+      const token = localStorage.getItem('sah_token');
+      if (token && currentData.userId && !String(token).startsWith('local_')) {
+        const fd = new FormData();
+        fd.append('providerData', JSON.stringify({
+          fullName:            currentData.name,
+          accountType:         currentData.accountType,
+          bio:                 currentData.bio,
+          experience:          currentData.yearsExperience,
+          languages:           currentData.languages,
+          primaryCategory:     currentData.primaryCategory,
+          secondaryCategories: currentData.secondaryCategories,
+          serviceTitle:        currentData.services?.[0]?.title   || currentData.serviceTitle  || '',
+          serviceDesc:         currentData.services?.[0]?.description || currentData.serviceDesc || '',
+          subjects:            currentData.subjects || currentData.tags?.join(', ') || '',
+          ageGroups:           currentData.ageGroups || currentData.services?.[0]?.ageGroups || [],
+          deliveryMode:        currentData.deliveryMode || currentData.services?.[0]?.deliveryMode || '',
+          city:                currentData.city,
+          province:            currentData.province,
+          serviceAreaType:     currentData.serviceAreaType,
+          radius:              currentData.radius,
+          pricingModel:        currentData.pricingModel,
+          startingPrice:       currentData.startingPrice,
+          availabilityDays:    currentData.availabilityDays,
+          availabilityNotes:   currentData.availabilityNotes,
+          phone:               currentData.phone,
+          whatsapp:            currentData.whatsapp,
+          inquiryEmail:        currentData.contactEmail,
+          website:             currentData.website,
+          facebook:            currentData.facebook,
+          instagram:           currentData.instagram,
+          linkedin:            currentData.linkedin,
+          tiktok:              currentData.tiktok,
+          twitter:             currentData.twitter,
+          degrees:             currentData.degrees,
+          certifications:      currentData.certifications,
+          memberships:         currentData.memberships,
+          clearance:           currentData.clearance,
+          listingPlan:         currentData.plan,
+          profilePhoto:        currentData.profilePhoto,
+          publicDisplay:       currentData.publicToggle,
+        }));
+
+        // Attach new PDF files if present
+        if (currentData._newCertFile) fd.append('certFile', currentData._newCertFile);
+        if (currentData._newClearanceFile) fd.append('clearanceFile', currentData._newClearanceFile);
+
+        fetch(`${API_URL}/providers/${currentData.userId}`, {
+          method: 'PATCH', headers: { Authorization: `Bearer ${token}` }, body: fd,
+        }).catch(e => console.warn('API sync (non-fatal):', e.message));
       }
-      return currentData; // return unchanged — we just needed to read it
+
+      return currentData;
     });
-    // Give the state updater time to run, then clean up
+
     setTimeout(() => {
       setSnapshot(null);
       setEditing(false);
       setLoading(false);
+      setQualFileName('');
+      setClearanceFileName('');
       showNotification('Changes saved successfully!', 'success');
     }, 100);
   }, [showNotification]);
+
   /* ─── photo ─── */
   const handlePhotoChange = (e) => {
     const file = e.target.files?.[0]; if (!file) return;
@@ -313,41 +529,55 @@ const ClientDashboard = () => {
     };
     reader.readAsDataURL(file);
   };
+
+  /* ─── qualification PDF upload (no auto-fill — file stored as-is for admin) ─── */
+  const handleQualFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Enforce PDF only
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      showNotification('Only PDF files are accepted for qualification documents.', 'error');
+      if (qualFileInputRef.current) qualFileInputRef.current.value = '';
+      return;
+    }
+
+    setQualFileName(file.name);
+    // Store the raw file object for API upload on save; do NOT auto-fill any text fields
+    upd({ _newCertFile: file, certFileName: file.name, certFileType: file.type });
+    showNotification('PDF attached. Click Save Changes to upload.', 'info');
+  };
+
+  /* ─── clearance PDF upload (no auto-fill — file stored as-is for admin) ─── */
+  const handleClearanceFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Enforce PDF only
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      showNotification('Only PDF files are accepted for police clearance documents.', 'error');
+      if (clearanceFileInputRef.current) clearanceFileInputRef.current.value = '';
+      return;
+    }
+
+    setClearanceFileName(file.name);
+    // Store the raw file object for API upload on save; do NOT auto-fill any text fields
+    upd({ _newClearanceFile: file, clearanceFileName: file.name, clearanceFileType: file.type });
+    showNotification('PDF attached. Click Save Changes to upload.', 'info');
+  };
+
   /* ─── service helpers ─── */
   const addService    = () => { if (svcCount < maxServices) upd({ services: [...profileData.services, { title: '', ageGroups: [], deliveryMode: 'Online', description: '', subjects: '' }] }); };
   const updService    = (i, s) => { const a = [...profileData.services]; a[i] = s; upd({ services: a }); };
   const removeService = (i)    => { if (profileData.services.length > 1) upd({ services: profileData.services.filter((_, idx) => idx !== i) }); };
+
   /* ─── day toggle ─── */
   const toggleDay = (d) => upd({
     availabilityDays: profileData.availabilityDays.includes(d)
       ? profileData.availabilityDays.filter(x => x !== d)
       : [...profileData.availabilityDays, d],
   });
-  /* ─── qual file ─── */
-  const handleQualFile = (e) => {
-    const file = e.target.files?.[0]; if (!file) return;
-    const base = file.name.replace(/\.[^.]+$/, '').replace(/[_\-.]/g, ' ').replace(/\s+/g, ' ').trim();
-    const lc   = base.toLowerCase();
-    const degKw = ['bed', 'bsc', 'ba ', 'honours', 'diploma', 'degree', 'masters', 'phd', 'med ', 'pgce'];
-    const cerKw = ['sace', 'umalusi', 'cert', 'accredited', 'registered', 'clearance'];
-    const hasDeg = degKw.some(k => lc.includes(k));
-    const hasCer = cerKw.some(k => lc.includes(k));
-    if (file.name.toLowerCase().endsWith('.txt')) {
-      const r = new FileReader();
-      r.onload = (ev) => {
-        const lines = ev.target.result.split('\n').map(l => l.trim()).filter(Boolean);
-        const dL = lines.find(l => degKw.some(k => l.toLowerCase().includes(k)));
-        const cL = lines.find(l => cerKw.some(k => l.toLowerCase().includes(k)));
-        const mL = lines.find(l => l.toLowerCase().includes('member'));
-        upd({ degrees: dL || profileData.degrees || base, certifications: cL || profileData.certifications || '', memberships: mL || profileData.memberships, _qualFileName: file.name });
-        showNotification('File parsed — review the pre-filled fields.', 'success');
-      };
-      r.readAsText(file);
-    } else {
-      upd({ degrees: hasDeg ? base : profileData.degrees, certifications: hasCer ? base : profileData.certifications, _qualFileName: file.name });
-      showNotification('File attached — please review pre-filled fields.', 'info');
-    }
-  };
+
   /* ─── plan change ─── */
   const handlePlanChange = (p) => {
     upd({ plan: p });
@@ -355,20 +585,29 @@ const ClientDashboard = () => {
     const names = { free: 'Community Member', pro: 'Trusted Provider', featured: 'Featured Partner' };
     showNotification(`Plan changed to ${names[p] || p}`, 'success');
   };
+
+  /* ─── file download ─── */
+  const downloadFile = (dataUrl, fileName) => {
+    if (!dataUrl) return;
+    const a = document.createElement('a'); a.href = dataUrl; a.download = fileName || 'document'; a.click();
+  };
+
   /* ─── misc ─── */
   const getPlanName = () => ({ free: 'Community Member (Free)', pro: 'Trusted Provider (R149/mo)', featured: 'Featured Partner (R399/mo)' }[profileData.plan] || 'Community Member');
   const statusInfo  = { approved: { cls: 'approved', icon: 'fa-check-circle', label: 'Approved — Live' }, rejected: { cls: 'rejected', icon: 'fa-times-circle', label: 'Rejected' }, pending: { cls: 'pending', icon: 'fa-clock', label: 'Pending Approval' } }[profileData.status] || { cls: 'pending', icon: 'fa-clock', label: 'Pending Approval' };
+
   /* completeness */
   const compItems = [
     { label: 'Name & Bio',      done: !!(profileData.name && profileData.bio) },
     { label: 'Photo',           done: !!(profileData.image || profileData.photo || profileData.profilePhoto) },
-    { label: 'Services',        done: (profileData.services || []).some(s => s.title) },
+    { label: 'Services',        done: (profileData.services || []).some(s => s.title) || !!profileData.serviceTitle },
     { label: 'Location',        done: !!(profileData.city && profileData.province) },
     { label: 'Contact Details', done: !!(profileData.phone && profileData.contactEmail) },
     { label: 'Qualifications',  done: !!(profileData.degrees || profileData.certifications) },
     { label: 'Availability',    done: (profileData.availabilityDays || []).length > 0 },
   ];
   const compPct = Math.round(compItems.filter(x => x.done).length / compItems.length * 100);
+
   const renderSaveBar = () => editing ? (
     <div className="cd-footer-bar">
       <span className="cd-last-edit"><i className="far fa-clock"></i> unsaved changes</span>
@@ -380,6 +619,67 @@ const ClientDashboard = () => {
       </div>
     </div>
   ) : null;
+
+  /* ── document card for PDF files ── */
+  // file = base64 data URL (or null), fileName = string, fileType = mime string
+  const renderDocCard = (file, fileName, fileType, label) => {
+    const displayName = fileName || label;
+    const isPdf = fileType === 'application/pdf' || (displayName || '').toLowerCase().endsWith('.pdf');
+    if (file) {
+      // We have the actual data — show download button
+      return (
+        <div className="cd-doc-card">
+          <div className="cd-doc-icon"><i className={`fas ${isPdf ? 'fa-file-pdf' : 'fa-file-alt'}`}></i></div>
+          <div className="cd-doc-info">
+            <div className="cd-doc-name">{displayName}</div>
+            <div className="cd-doc-sub">{isPdf ? 'PDF document' : 'Document'}</div>
+          </div>
+          <button className="cd-doc-dl" onClick={() => downloadFile(file, displayName)}>
+            <i className="fas fa-download"></i> Download
+          </button>
+        </div>
+      );
+    }
+    if (displayName && displayName !== label) {
+      // We have the filename but no data (e.g. stored on server only) — show name badge
+      return (
+        <div className="cd-doc-card">
+          <div className="cd-doc-icon"><i className="fas fa-file-pdf"></i></div>
+          <div className="cd-doc-info">
+            <div className="cd-doc-name">{displayName}</div>
+            <div className="cd-doc-sub">Stored on server — contact admin to retrieve</div>
+          </div>
+          <span style={{ fontSize: '0.7rem', color: '#888', flexShrink: 0, padding: '5px 8px', background: '#f0ece5', borderRadius: 5 }}>
+            <i className="fas fa-cloud"></i> Server
+          </span>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  /* ── render all files from certFilesAll / clearanceFilesAll arrays ── */
+  const renderAllDocCards = (filesAll, docNames, sectionLabel) => {
+    // filesAll = [{name, type, data}] stored from registration
+    // docNames = [string] filenames only (fallback when no base64)
+    const cards = [];
+    if (filesAll && filesAll.length > 0) {
+      filesAll.forEach((f, i) => cards.push(
+        <div key={`${sectionLabel}-all-${i}`}>
+          {renderDocCard(f.data, f.name, f.type, sectionLabel)}
+        </div>
+      ));
+    } else if (docNames && docNames.length > 0) {
+      // Fallback: only names available
+      docNames.forEach((name, i) => cards.push(
+        <div key={`${sectionLabel}-name-${i}`}>
+          {renderDocCard(null, name, 'application/pdf', sectionLabel)}
+        </div>
+      ));
+    }
+    return cards;
+  };
+
   const renderSidebar = () => (
     <div>
       <div className="cd-sidebar-card">
@@ -416,8 +716,22 @@ const ClientDashboard = () => {
           </div>
         </div>
       )}
+      {/* Languages sidebar mini-card */}
+      {(profileData.languages || []).length > 0 && (
+        <div className="cd-sidebar-card">
+          <div className="cd-sidebar-header">
+            <div className="cd-sidebar-title"><i className="fas fa-language" style={{ marginRight: 6 }}></i>Languages</div>
+          </div>
+          <div className="cd-sidebar-body">
+            <div className="cd-tags">
+              {(profileData.languages || []).map((l, i) => <span key={i} className="cd-tag">{l}</span>)}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
+
   /* ══ TAB: PROFILE ══ */
   const renderTabProfile = () => (
     <div className="cd-layout">
@@ -494,6 +808,15 @@ const ClientDashboard = () => {
                   </select>
                 : <div className={`cd-value ${!profileData.primaryCategory ? 'empty' : ''}`}>{profileData.primaryCategory || '—'}</div>}
             </div>
+            {/* Secondary categories — view only (set during registration) */}
+            {(profileData.secondaryCategories || []).length > 0 && (
+              <div className="cd-field">
+                <label className="cd-label">Secondary Categories</label>
+                <div className="cd-tags">
+                  {(profileData.secondaryCategories || []).map((c, i) => <span key={i} className="cd-tag">{c}</span>)}
+                </div>
+              </div>
+            )}
             <div className="cd-field">
               <label className="cd-label">Tags / Subjects</label>
               {editing
@@ -509,9 +832,36 @@ const ClientDashboard = () => {
                       : <span className="cd-value empty" style={{ padding: 0 }}>No tags yet</span>}
                   </div>}
             </div>
+            {/* Languages (editable) */}
+            <div className="cd-field">
+              <label className="cd-label">Languages Spoken</label>
+              {editing ? (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
+                  {['English','Afrikaans','isiZulu','isiXhosa','Sepedi','Setswana','Sesotho','Xitsonga','SiSwati','Tshivenda','isiNdebele','Other'].map(lang => (
+                    <label key={lang} style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:'0.8rem', cursor:'pointer', padding:'5px 11px', border:'1.5px solid', borderColor:(profileData.languages||[]).includes(lang)?'#c9621a':'#e5e0d8', borderRadius:6, background:(profileData.languages||[]).includes(lang)?'rgba(201,98,26,0.08)':'#faf9f7', color:(profileData.languages||[]).includes(lang)?'#c9621a':'#555', fontWeight:600 }}>
+                      <input type="checkbox" style={{ accentColor:'#c9621a' }}
+                        checked={(profileData.languages||[]).includes(lang)}
+                        onChange={e => {
+                          const cur = profileData.languages || [];
+                          upd({ languages: e.target.checked ? [...cur, lang] : cur.filter(l => l !== lang) });
+                        }} />
+                      {lang}
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <div className="cd-tags">
+                  {(profileData.languages||[]).length > 0
+                    ? (profileData.languages||[]).map((l,i) => <span key={i} className="cd-tag">{l}</span>)
+                    : <span className="cd-value empty" style={{ padding:0 }}>—</span>}
+                </div>
+              )}
+            </div>
           </div>
           {renderSaveBar()}
         </div>
+
+        {/* Qualifications card */}
         <div className="cd-card">
           <div className="cd-card-header">
             <div className="cd-card-header-icon"><i className="fas fa-graduation-cap"></i></div>
@@ -522,17 +872,6 @@ const ClientDashboard = () => {
             </button>
           </div>
           <div className="cd-card-body">
-            {editing && (
-              <div className="cd-field">
-                <label className="cd-label"><i className="fas fa-upload" style={{ marginRight: 5 }}></i>Upload Qualification File (auto-fill)</label>
-                <input type="file" accept=".pdf,.doc,.docx,.txt,.jpg,.png" className="cd-input" style={{ padding: '7px 10px', fontSize: '0.8rem', cursor: 'pointer' }} onChange={handleQualFile} />
-                {profileData._qualFileName && (
-                  <div className="cd-qual-parsed">
-                    <i className="fas fa-check-circle"></i> <strong>{profileData._qualFileName}</strong> — review fields below.
-                  </div>
-                )}
-              </div>
-            )}
             <div className="cd-row">
               <div className="cd-field">
                 <label className="cd-label">Degrees / Diplomas</label>
@@ -561,6 +900,79 @@ const ClientDashboard = () => {
                     : <div className="cd-value empty">Not provided</div>}
               </div>
             </div>
+
+            {/* ── PDF Document Uploads (PDF only, no auto-fill) ── */}
+            {editing && (
+              <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid #f0ece5' }}>
+                <div className="cd-sec-label"><i className="fas fa-file-pdf"></i> Upload Supporting Documents (PDF only)</div>
+                <div className="cd-info-note" style={{ marginBottom: 14 }}>
+                  <i className="fas fa-info-circle"></i>
+                  <span>Upload PDF documents only. These will be reviewed by the admin as-is and will not affect your text fields above.</span>
+                </div>
+
+                {/* Qualification PDF */}
+                <div className="cd-field">
+                  <label className="cd-label"><i className="fas fa-certificate" style={{ marginRight: 5, color: '#c9621a' }}></i>Qualification / Certificate PDF</label>
+                  <input
+                    ref={qualFileInputRef}
+                    type="file"
+                    accept="application/pdf,.pdf"
+                    className="cd-input"
+                    style={{ padding: '7px 10px', fontSize: '0.8rem', cursor: 'pointer' }}
+                    onChange={handleQualFileChange}
+                  />
+                  {qualFileName && (
+                    <div className="cd-qual-notice">
+                      <i className="fas fa-file-pdf"></i>
+                      <span><strong>{qualFileName}</strong> — will be submitted to admin on Save.</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Clearance PDF */}
+                <div className="cd-field" style={{ marginTop: 10 }}>
+                  <label className="cd-label"><i className="fas fa-shield-alt" style={{ marginRight: 5, color: '#c9621a' }}></i>Police Clearance PDF</label>
+                  <input
+                    ref={clearanceFileInputRef}
+                    type="file"
+                    accept="application/pdf,.pdf"
+                    className="cd-input"
+                    style={{ padding: '7px 10px', fontSize: '0.8rem', cursor: 'pointer' }}
+                    onChange={handleClearanceFileChange}
+                  />
+                  {clearanceFileName && (
+                    <div className="cd-qual-notice">
+                      <i className="fas fa-file-pdf"></i>
+                      <span><strong>{clearanceFileName}</strong> — will be submitted to admin on Save.</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ── Previously uploaded document files from registration ── */}
+            {(() => {
+              const hasCertDocs  = (profileData.certFilesAll?.length > 0)  || (profileData.certDocuments?.length > 0)  || !!profileData.certFile;
+              const hasClearDocs = (profileData.clearanceFilesAll?.length > 0) || (profileData.clearanceDocuments?.length > 0) || !!profileData.clearanceFile;
+              if (!hasCertDocs && !hasClearDocs) return null;
+              return (
+                <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid #f0ece5' }}>
+                  <div className="cd-sec-label"><i className="fas fa-paperclip"></i> Uploaded Documents</div>
+                  {hasCertDocs && (
+                    <>
+                      <div style={{ fontSize: '0.67rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.6px', color: '#aaa', marginBottom: 6 }}>Qualification / Certificate PDFs</div>
+                      {renderAllDocCards(profileData.certFilesAll, profileData.certDocuments, 'Qualification / Certificate')}
+                    </>
+                  )}
+                  {hasClearDocs && (
+                    <>
+                      <div style={{ fontSize: '0.67rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.6px', color: '#aaa', marginTop: hasCertDocs ? 10 : 0, marginBottom: 6 }}>Police Clearance PDFs</div>
+                      {renderAllDocCards(profileData.clearanceFilesAll, profileData.clearanceDocuments, 'Police Clearance')}
+                    </>
+                  )}
+                </div>
+              );
+            })()}
           </div>
           {renderSaveBar()}
         </div>
@@ -568,6 +980,7 @@ const ClientDashboard = () => {
       {renderSidebar()}
     </div>
   );
+
   /* ══ TAB: SERVICES ══ */
   const renderTabServices = () => (
     <div className="cd-layout">
@@ -689,6 +1102,7 @@ const ClientDashboard = () => {
       {renderSidebar()}
     </div>
   );
+
   /* ══ TAB: LOCATION & PRICING ══ */
   const renderTabLocation = () => (
     <div className="cd-layout">
@@ -743,6 +1157,7 @@ const ClientDashboard = () => {
           </div>
           {renderSaveBar()}
         </div>
+
         <div className="cd-card">
           <div className="cd-card-header">
             <div className="cd-card-header-icon"><i className="fas fa-tag"></i></div>
@@ -798,6 +1213,7 @@ const ClientDashboard = () => {
       {renderSidebar()}
     </div>
   );
+
   /* ══ TAB: CONTACT & SOCIAL ══ */
   const renderTabContact = () => (
     <div className="cd-layout">
@@ -819,7 +1235,12 @@ const ClientDashboard = () => {
                   { label: 'WhatsApp',      key: 'whatsapp',     type: 'text',  placeholder: '+27 82 000 0000' },
                   { label: 'Enquiry Email', key: 'contactEmail', type: 'email', placeholder: 'contact@example.com' },
                   { label: 'Website',       key: 'website',      type: 'url',   placeholder: 'https://yoursite.co.za' },
-                  { label: 'Facebook Page', key: 'facebook',     type: 'url',   placeholder: 'https://facebook.com/yourpage' },
+                  { label: 'LinkedIn',      key: 'linkedin',     type: 'url',   placeholder: 'https://linkedin.com/in/yourname' },
+                  { label: 'Instagram',     key: 'instagram',    type: 'url',   placeholder: 'https://instagram.com/yourprofile' },
+                  { label: 'Facebook',      key: 'facebook',     type: 'url',   placeholder: 'https://facebook.com/yourpage' },
+                  { label: 'TikTok',        key: 'tiktok',       type: 'url',   placeholder: 'https://tiktok.com/@yourhandle' },
+                  { label: 'X / Twitter',   key: 'twitter',      type: 'url',   placeholder: 'https://x.com/yourhandle' },
+                  { label: 'YouTube',       key: 'youtube',      type: 'url',   placeholder: 'https://youtube.com/@yourchannel' },
                 ].map(({ label, key, type, placeholder }) => (
                   <div key={key} className="cd-field">
                     <label className="cd-label">{label}</label>
@@ -831,15 +1252,22 @@ const ClientDashboard = () => {
             ) : (
               <div>
                 {[
-                  { icon: 'fa-user',     label: 'Contact Name', val: profileData.contactName },
-                  { icon: 'fa-phone',    label: 'Phone',        val: profileData.phone },
-                  { icon: 'fa-whatsapp', label: 'WhatsApp',     val: profileData.whatsapp || profileData.phone },
-                  { icon: 'fa-envelope', label: 'Email',        val: profileData.contactEmail },
-                  { icon: 'fa-globe',    label: 'Website',      val: profileData.website || profileData.social },
-                  { icon: 'fa-facebook', label: 'Facebook',     val: profileData.facebook },
-                ].filter(x => x.val).map(({ icon, label, val }) => (
+                  { icon: 'fa-user',        brand: false, label: 'Contact Name', val: profileData.contactName },
+                  { icon: 'fa-phone',       brand: false, label: 'Phone',        val: profileData.phone },
+                  { icon: 'fa-whatsapp',    brand: true,  label: 'WhatsApp',     val: profileData.whatsapp || profileData.phone },
+                  { icon: 'fa-envelope',    brand: false, label: 'Email',        val: profileData.contactEmail },
+                  { icon: 'fa-globe',       brand: false, label: 'Website',      val: profileData.website || profileData.social },
+                  { icon: 'fa-linkedin',    brand: true,  label: 'LinkedIn',     val: profileData.linkedin },
+                  { icon: 'fa-instagram',   brand: true,  label: 'Instagram',    val: profileData.instagram },
+                  { icon: 'fa-facebook',    brand: true,  label: 'Facebook',     val: profileData.facebook },
+                  { icon: 'fa-tiktok',      brand: true,  label: 'TikTok',       val: profileData.tiktok },
+                  { icon: 'fa-x-twitter',   brand: true,  label: 'X / Twitter',  val: profileData.twitter },
+                  { icon: 'fa-youtube',     brand: true,  label: 'YouTube',      val: profileData.youtube },
+                ].filter(x => x.val).map(({ icon, brand, label, val }) => (
                   <div key={label} className="cd-contact-item">
-                    <div className="cd-contact-icon"><i className={`fas ${icon}`}></i></div>
+                    <div className="cd-contact-icon">
+                      <i className={`${brand ? 'fab' : 'fas'} ${icon}`}></i>
+                    </div>
                     <div><div className="cd-contact-label">{label}</div><div className="cd-contact-val">{val}</div></div>
                   </div>
                 ))}
@@ -865,6 +1293,7 @@ const ClientDashboard = () => {
       {renderSidebar()}
     </div>
   );
+
   /* ══ TAB: PLAN & REVIEWS ══ */
   const renderTabPlan = () => (
     <div className="cd-layout">
@@ -955,7 +1384,18 @@ const ClientDashboard = () => {
       {renderSidebar()}
     </div>
   );
+
   const renderActiveTab = () => {
+    if (dataLoading) {
+      return (
+        <div style={{ display:'flex', justifyContent:'center', alignItems:'center', minHeight:200 }}>
+          <div style={{ textAlign:'center', color:'#888' }}>
+            <i className="fas fa-spinner fa-spin" style={{ fontSize:'1.5rem', marginBottom:8, display:'block' }}></i>
+            Loading your profile…
+          </div>
+        </div>
+      );
+    }
     switch (activeTab) {
       case 'profile':  return renderTabProfile();
       case 'services': return renderTabServices();
@@ -965,9 +1405,11 @@ const ClientDashboard = () => {
       default:         return renderTabProfile();
     }
   };
+
   return (
     <div className="cd-wrap">
-      <Header userType="client" />
+      {/* ── Pass backPath so Header "Back to Directory" navigates to HomePage ── */}
+      <Header userType="client" backPath="/" />
       <section className="cd-hero">
         <div className="cd-hero-top">
           <div className="cd-hero-left">
@@ -982,7 +1424,6 @@ const ClientDashboard = () => {
               </div>
             </div>
           </div>
-          {/* ── HERO RIGHT: only Public View (Back to Directory moved to Header) ── */}
           <div className="cd-hero-right">
             <button
               className="cd-btn-ghost"
@@ -1015,4 +1456,5 @@ const ClientDashboard = () => {
     </div>
   );
 };
+
 export default ClientDashboard;

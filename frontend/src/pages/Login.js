@@ -251,15 +251,16 @@ const Login = () => {
             </div>
 
             <div className="sah-login-card-body">
-              <form onSubmit={handleSubmit} noValidate>
+              <form onSubmit={handleSubmit} noValidate autoComplete="off">
                 <div className="sah-lfield">
                   <label><i className="fas fa-envelope" /> Email Address <span>*</span></label>
                   <input
                     type="email"
                     value={email}
                     onChange={e => { setEmail(e.target.value); setErrors(p => ({ ...p, email: '' })); }}
-                    placeholder="you@example.co.za"
+                    placeholder="johndoe@gmail.com"
                     className={errors.email ? 'error' : ''}
+                    autoComplete="off"
                     autoFocus
                   />
                   {errors.email && <div className="sah-field-err"><i className="fas fa-circle-exclamation" /> {errors.email}</div>}
@@ -272,8 +273,9 @@ const Login = () => {
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={e => { setPassword(e.target.value); setErrors(p => ({ ...p, password: '' })); }}
-                      placeholder="Your password"
+                      placeholder="************"
                       className={errors.password ? 'error' : ''}
+                      autoComplete="new-password"
                     />
                     <button type="button" className="sah-pw-toggle" onClick={() => setShowPassword(s => !s)}>
                       <i className={`far fa-eye${showPassword ? '-slash' : ''}`} />
