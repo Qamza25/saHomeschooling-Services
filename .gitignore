@@ -1,0 +1,69 @@
+# See https://help.github.com/articles/ignoring-files-in-github-pages/
+
+# Dependencies
+backend/node_modules
+frontend/node_modules
+node_modules
+
+# Dependency directories
+/node_modules
+/.pnpm
+.pnp.js
+.pnp.cjs
+
+# Testing
+/coverage
+backend/coverage
+frontend/coverage
+
+# Production
+/build
+backend/build
+frontend/build
+backend/dist
+frontend/dist
+
+# Misc
+.DS_Store
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.code-workspace
+
+# Environment files
+backend/.env
+frontend/.env
+.env.*
+
+# Cache files
+.cache
+.eslintcache
+.prettiercache
+stylelintcache
+
+# Build outputs
+*.tsbuildinfo
+next-env.d.ts
+
+# Package manager specific
+package-lock.json
+yarn.lock
+pnpm-lock.yaml

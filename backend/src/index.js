@@ -12,7 +12,7 @@ const statsRoutes        = require('./routes/statsRoutes');
 const app = express();
 
 // ✅ Railway-safe PORT
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8080;
 
 // ✅ Production-ready CORS
 app.use(cors({
