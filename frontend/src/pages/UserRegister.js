@@ -184,8 +184,7 @@ const UserRegister = () => {
     // Username validation
     if (!uname || uname.length < 3)    e.username = 'Username must be at least 3 characters.';
     else if (/\s/.test(uname))         e.username = 'Username cannot contain spaces.';
-    else if (!/^[a-zA-Z0-9_.\-]+$/.test(uname)) e.username = 'Username may only contain letters, numbers, _ . -';
-    
+    else if (!/^[a-zA-Z0-9_.-]+$/.test(uname)) e.username = 'Username may only contain letters, numbers, _ . -';
     // Relaxed email: just needs @ and some characters around it
     const emailTrimmed = email.trim();
     if (!emailTrimmed) {
