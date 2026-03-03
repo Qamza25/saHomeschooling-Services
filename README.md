@@ -100,11 +100,7 @@ Start the backendBashnpm run dev→ API should be running at http://localhost:50
 Start the frontend (in another terminal)Bashcd frontend
 npm run dev→ App opens at http://localhost:5173 (or similar)
 
-Default Test Accounts
-
-RoleEmailPasswordNotes
-dashboard accessProvidercontact@khanacademy.org.za(any)Demo provider shortcut
-Available Pages
+Default Tests
 
 /                 → Home / Directory
 /login            → Login page
@@ -124,13 +120,10 @@ Switch to real database + API by uncommenting fetch calls in Registration.js and
 License
 MIT
 
-Built with ❤️ for South African homeschooling families
+Built with for South African homeschooling families
 © 2025 SA Homeschooling Services Directory
 text### Next steps you may want to do:
 
-1. Put this content in root `README.md`
-2. Make sure `frontend/public/Screenshot.png` exists (or update the path in markdown)
-3. Add badges (optional):
 
    ```markdown
    <image-card alt="React" src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" ></image-card>
@@ -142,5 +135,6 @@ Deployment instructions
 API documentation
 Contributing guide
 Roadmap
+```
 
 Happy coding! 🚀5.6sFast
